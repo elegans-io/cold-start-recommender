@@ -1,11 +1,12 @@
 import random
 from csrec.Recommender import Recommender
-import logging
 import math
 import numpy as np
+import time
 
 engine = Recommender(mongo_host="localhost:27017", mongo_db_name="csrec", log_level=30)
-print "Creato"
+
+print "Engine created"
 
 engine.insert_item({'_id': 'an_item', 'author': 'The Author', 'tags': '["nice", "good"]'})
 
@@ -15,7 +16,7 @@ engine.drop_db()
 n_books = 1000
 n_users = 1000
 n_purchases = 10000
-n_authors = 100
+n_authors = 50
 n_publishers = 10
 authors = ['A'+str(i) for i in range(1, n_authors+1)]
 publishers = ['P'+str(i) for i in range(1, n_publishers+1)]
@@ -37,8 +38,20 @@ while(purchase < n_purchases):
         #print 'user', user_id, 'rated', rating, 'stars item', item_id
         engine.insert_rating(user_id=user_id, item_id=item_id, rating=3, item_info=['author', 'publisher'], only_info=False)
 
-%timeit engine.get_recommendations('u1')
+start = time.time()
+for i in xrange(n_users):
+    engine.get_recommendations("u"+str(i))
+end = time.time()
 
+av = (end - start) / n_users
 
-print "End"
+print "Average time, normal:", av
 
+start = time.time()
+for i in xrange(n_users):
+    engine.get_recommendations("u"+str(i), fast=True)
+end = time.time()
+
+av = (end - start) / n_users
+
+print "Average time, fast:", av
