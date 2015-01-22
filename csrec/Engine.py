@@ -1,12 +1,17 @@
 __author__ = 'mario'
 
 from abc import ABCMeta, abstractmethod
+import logging
 
-class EngineBase():
+class Engine():
     """
     Engine behind the recommender.
+
     We approach the recommendation problem as bipartite graph problem, where
-    the two disjointed sets are called *info* and *entities*.
+    the two sets (dimensions) are called *info* and *entities*.
+
+    Contrary to purely bipartite, there might be relationship between nodes
+    of the sub-graph (e.g. user follow user).
 
     Info-nodes provide information about the entity, to which they are related.
 
@@ -26,6 +31,67 @@ class EngineBase():
 
     """
 
+    def __init__(self, data_object, log_level=logging.DEBUG):
+        try:
+            assert (DataBase in type(data_object).__bases__)
+        except:
+            raise Exception('data_class must be a DataBase')
+
+        self.logger = logging.getLogger("engine")
+        self.logger.setLevel(log_level)
+        ch = logging.StreamHandler()
+        ch.setLevel(log_level)
+        self.logger.addHandler(ch)
+        self.logger.debug("============ Creating Engine Instance ================")
+
+
+    def reduce_graph(self, dimension, algorithm):
+        """
+        Using the favourite algorithm, reduce the graph (e.g. cooccurrence of items
+        weighted with log-likelihood ratio).
+
+        Calls different
+
+        :param dimension in ['info', 'entity']
+        :return: nothing, but updates/creates the similarity matrix (e.g. cooccurrence, llr etc)
+        """
+        pass
+
+
+    def _reduce_graph_pandas_cooccurrence(self):
+        """
+        Take data_object, build a pandas.dataframe and compute cooccurrence
+        :return:
+        """
+        pass
+
+
+    def _reduce_graph_pandas_loglikelihood(self):
+        """
+        Take data_object, build a pandas.dataframe and compute llr
+        :return:
+        """
+        pass
+
+
+
+
+
+
+    def rank_nodes(self, dimension, algorithm):
+        """
+        Rank nodes according to some algorithm (eg popularity for info
+        or centrality for users)
+        :param dimension:
+        :return:
+        """
+
+
+class DataBase():
+    """
+    Give access to the data
+    """
+
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -43,13 +109,12 @@ class EngineBase():
 
 
     @abstractmethod
-    def reduce_graph(self, dimension):
+    def insert_node(self, dimension, node_dict, _id="_id"):
         """
-        Using the favourite algorithm, reduce the graph (e.g. cooccurrence of items
-        weighted with log-likelihood ratio)
-
-        :param dimension in ['info', 'entity']
-        :return: nothing, but updates/creates the similarity matrix (e.g. cooccurrence, llr etc)
+        item_dict is
+        :param item_dict:
+        :param _id:
+        :return:
         """
         pass
 
@@ -67,4 +132,5 @@ class EngineBase():
         :param id_new
         :return: nothing, update the similarity matrix
         """
+        pass
 
