@@ -61,6 +61,20 @@ A simple script
     engine.insert_rating(user_id='another_user', item_id='an_item', rating=3, item_info=['author'], only_info=True)
 
 
+Dependencies
+============
+
+The following python packages are needed in order to run the recommender:
+
+#unittest
+#abc
+#pickle
+#math
+#pandas
+#numpy
+
+
+
 Features
 ========
 

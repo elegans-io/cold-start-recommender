@@ -10,9 +10,14 @@ class Recommender(Singleton):
     """
     Cold Start Recommender
     """
-    def __init__(self, mongo_host=None, mongo_db_name=None, mongo_replica_set=None,
-                 default_rating=3, max_rating=5,
-                 log_level=logging.DEBUG):
+    def __init__(self, default_rating=3, max_rating=5, log_level=logging.DEBUG):
+        # Loggin stuff
+        self.logger = logging.getLogger("csrc")
+        self.logger.setLevel(log_level)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        self.logger.addHandler(ch)
+        self.logger.debug("============ Creating a Recommender Instance ================")
 
         self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
         self.default_rating = default_rating  # Rating inserted by default
@@ -24,6 +29,7 @@ class Recommender(Singleton):
         self.user_ratings = defaultdict(dict)  # matrix of ratings for a user (inmemory testing)
         self.items = defaultdict(dict)  # matrix of item's information {item_id: {"Author": "AA. VV."....}
         self.item_id_key = 'id'
+
         # categories --same as above, but separated as they are not always available
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
@@ -31,44 +37,6 @@ class Recommender(Singleton):
         self.n_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.items_by_popularity = []
         self.items_by_popularity_updated = 0.0  # Time of update
-        # Loggin stuff
-        self.logger = logging.getLogger("csrc")
-        self.logger.setLevel(log_level)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        self.logger.addHandler(ch)
-        self.logger.debug("============ Creating a Recommender Instance ================")
-        self.db = None
-
-        if mongo_host is not None:
-            self.logger.debug("============ Host: %s", str(mongo_host))
-            if mongo_replica_set is not None:
-                self.logger.debug("============ Replica: %s", str(mongo_replica_set))
-
-            assert (mongo_db_name is not None)
-            if mongo_replica_set is not None:
-                from pymongo import MongoReplicaSetClient
-                self.mongo_host = mongo_host
-                self.mongo_replica_set = mongo_replica_set
-                self.mongo_db_name = mongo_db_name
-                self.mongo_client = MongoReplicaSetClient(self.mongo_host,
-                                                          replicaSet=self.mongo_replica_set)
-                self.db = self.mongo_client[self.mongo_db_name]
-                # reading --for producing recommendations-- could be even out of sync.
-                # this can be added if most replicas are in-memory
-                # self.db.read_preference = ReadPreference.SECONDARY_PREFERRED
-            else:
-                from pymongo import MongoClient
-                self.mongo_host = mongo_host
-                self.mongo_replica_set = mongo_replica_set
-                self.mongo_db_name = mongo_db_name
-                self.mongo_client = MongoClient(self.mongo_host)
-                self.db = self.mongo_client[self.mongo_db_name]
-            # If these tables do not exist, it might create problems
-            if not self.db['user_ratings'].find_one():
-                self.db['user_ratings'].insert({})
-            if not self.db['item_ratings'].find_one():
-                self.db['item_ratings'].insert({})
 
     def _coll_name(self, k, typ):
         """
@@ -83,29 +51,15 @@ class Recommender(Singleton):
         :return:
         """
         df_tot_cat_item = {}
-        if not self.db:
-            # Items' vectors
-            df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int)
-            # Categories' vectors
-            info_used = self.info_used
-            if len(info_used) > 0:
-                for i in info_used:
-                    df_tot_cat_item[i] = pd.DataFrame(self.tot_categories_item_ratings[i]).fillna(0).astype(int)
-        else:  # read if from Mongodb
-            # here we *must* use user_ratings, so indexes are the users, columns the items...
-            df_item = pd.DataFrame.from_records(list(self.db['user_ratings'].find())).set_index('_id').fillna(0).astype(int)
-            try:
-                info_used = self.db['utils'].find_one({"_id": 1}, {'info_used': 1, "_id": 0}).get('info_used', [])
-                self.logger.info("[_create_cooccurrence] Found info_used already in db.utils: %s", info_used)
-            except:
-                info_used = []
-                self.logger.info("[_create_cooccurrence] No info_used in db.utils, setting = []")
 
-            if len(info_used) > 0:
-                for i in info_used:
-                    user_coll_name = self._coll_name(i, 'user')
-                    if self.db['tot_' + user_coll_name].find_one():
-                        df_tot_cat_item[i] = pd.DataFrame.from_records(list(self.db['tot_' + user_coll_name].find())).set_index('_id').fillna(0).astype(int)
+        # Items' vectors
+        df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int)
+        # Categories' vectors
+        info_used = self.info_used
+        if len(info_used) > 0:
+            for i in info_used:
+                df_tot_cat_item[i] = pd.DataFrame(self.tot_categories_item_ratings[i]).fillna(0).astype(int)
+
         df_item = (df_item / df_item).replace(np.inf, 0)  # normalize to one to build the co-occurrence
         self._items_cooccurrence = df_item.T.dot(df_item)
         if len(info_used) > 0:
@@ -125,29 +79,6 @@ class Recommender(Singleton):
         """
         #Doing that only for the mongodb case..
         self.logger.warning("[_sync_user_item_ratings] Syncronyzing item_ratings with user_ratings data")
-        if self.db:
-            self.db['item_ratings'].drop()
-            for user_date in self.db['user_ratings'].find():  # don't put {_id: 0!}
-                for item_id, rating in user_date.iteritems():
-                    if item_id != "_id":
-                        self.db['item_ratings'].update(
-                            {"_id": item_id},
-                            {"$set": {user_date["_id"]: rating}},
-                            upsert=True
-                        )
-            for coll in self.db.collection_names():
-                if '_item_' in coll:
-                    user_coll = coll.replace('_item_', '_user_')
-                    self.db[coll].drop()
-                    for user_date in self.db[user_coll].find():  # don't put {_id: 0!}
-                        for info_id, value in user_date.iteritems():
-                            if info_id != "_id":
-                                self.db[coll].update(
-                                    {"_id": info_id},
-                                    {"$set": {user_date["_id"]: value}},
-                                    upsert=True
-                                )
-
 
     def insert_item(self, item, _id="_id"):
         """
@@ -157,14 +88,7 @@ class Recommender(Singleton):
         :return: None
         """
         self.item_id_key = _id
-        if not self.db:
-            self.items[item[_id]] = item
-        else:
-            for k, v in item.items():
-                if k is not "_id":
-                    self.db["items"].update({"_id": item[_id]},
-                                            {"$set": {k: v}},
-                                            upsert=True)
+        self.items[item[_id]] = item
 
 
     def reconcile_ids(self, id_old, id_new):
@@ -178,93 +102,35 @@ class Recommender(Singleton):
         """
         id_new = str(id_new).replace(".", "")
         id_old = str(id_old).replace(".", "")
-        if not self.db:
-            # user-item
-            for key, value in self.user_ratings[id_old].items():
-                self.user_ratings[id_new][key] = self.user_ratings[id_old][key]
-            self.user_ratings.pop(id_old)
 
-            for k, v in self.item_ratings.items():
-                if v.has_key(id_old):
-                    v[id_new] = v.pop(id_old)
-            # user-categories
-            if len(self.info_used) > 0:
-                for i in self.info_used:
-                    for key, value in self.tot_categories_user_ratings[i][id_old].items():
-                        self.tot_categories_user_ratings[i][id_new][key] = self.tot_categories_user_ratings[i][id_old][key]
-                    self.tot_categories_user_ratings[i].pop(id_old)
+        # user-item
+        for key, value in self.user_ratings[id_old].items():
+            self.user_ratings[id_new][key] = self.user_ratings[id_old][key]
+        self.user_ratings.pop(id_old)
 
-                    for k, v in self.tot_categories_item_ratings[i].items():
-                        if v.has_key(id_old):
-                            v[id_new] = v.pop(id_old)
+        for k, v in self.item_ratings.items():
+            if v.has_key(id_old):
+                v[id_new] = v.pop(id_old)
 
-                    for key, value in self.n_categories_user_ratings[i][id_old].items():
-                        self.n_categories_user_ratings[i][id_new][key] = self.n_categories_user_ratings[i][id_old][key]
-                    self.n_categories_user_ratings[i].pop(id_old)
+        # user-categories
+        if len(self.info_used) > 0:
+            for i in self.info_used:
+                for key, value in self.tot_categories_user_ratings[i][id_old].items():
+                    self.tot_categories_user_ratings[i][id_new][key] = self.tot_categories_user_ratings[i][id_old][key]
+                self.tot_categories_user_ratings[i].pop(id_old)
 
-                    for k, v in self.n_categories_item_ratings[i].items():
-                        if v.has_key(id_old):
-                            v[id_new] = v.pop(id_old)
-        else:  # work on mongo...
-            user_ratings = self.db['user_ratings'].find_one({"_id": id_old}, {"_id": 0})
-            if user_ratings:
-                for key, value in user_ratings.items():
-                    self.db['user_ratings'].update(
-                        {"_id": id_new},
-                        {"$set": {key: value}},
-                        upsert=True
-                    )
-                    self.logger.info("[reconcile_ids] %s : %s for new user_id %s", key, value, id_new)
-                self.logger.info("[reconcile_ids] Removing %s from user_rating", id_old)
-                self.db['user_ratings'].remove({"_id": id_old})
+                for k, v in self.tot_categories_item_ratings[i].items():
+                    if v.has_key(id_old):
+                        v[id_new] = v.pop(id_old)
 
-            self.db['item_ratings'].update(
-                {id_old: {"$exists": True}},
-                {"$rename": {id_old: id_new}},
-                multi=True
-            )
+                for key, value in self.n_categories_user_ratings[i][id_old].items():
+                    self.n_categories_user_ratings[i][id_new][key] = self.n_categories_user_ratings[i][id_old][key]
+                self.n_categories_user_ratings[i].pop(id_old)
 
-            try:
-                info_used = self.db['utils'].find_one({"_id": 1}, {'info_used': 1, "_id": 0}).get('info_used', [])
-                self.logger.debug("[reconcile_ids] info_used %s", info_used)
-            except:
-                info_used = []
-                self.logger.debug("[reconcile_ids] info_used not found, setting []", info_used)
-            if len(info_used) > 0:
-                for k in info_used:
-                    users_coll_name = self._coll_name(k, 'user')
-                    items_coll_name = self._coll_name(k, 'item')
-                    # tot and n user ratings....
-                    tot_user_ratings = self.db['tot_' + users_coll_name].find_one({"_id": id_old}, {"_id": 0})
-                    if tot_user_ratings:
-                        for key, value in tot_user_ratings.items():
-                            self.db['tot_' + users_coll_name].update(
-                                {"_id": id_new},
-                                {"$set": {key: value}},
-                                upsert=True
-                            )
-                        self.db['tot_' + users_coll_name].remove({"_id": id_old})
-                    n_user_ratings = self.db['n_' + users_coll_name].find_one({"_id": id_old}, {"_id": 0})
-                    if n_user_ratings:
-                        for key, value in n_user_ratings.items():
-                            self.db['n_' + users_coll_name].update(
-                                {"_id": id_new},
-                                {"$set": {key: value}},
-                                upsert=True
-                            )
-                        self.db['n_' + users_coll_name].remove({"_id": id_old})
+                for k, v in self.n_categories_item_ratings[i].items():
+                    if v.has_key(id_old):
+                        v[id_new] = v.pop(id_old)
 
-                    self.db['tot_' + items_coll_name].update(
-                        {id_old: {"$exists": True}},
-                        {"$rename": {"id_new": "id_old"}},
-                        multi=True
-                    )
-
-                    self.db['n_' + items_coll_name].update(
-                        {id_old: {"$exists": True}},
-                        {"$rename": {"id_new": "id_old"}},
-                        multi=True
-                    )
         self._create_cooccurrence()
 
 
@@ -278,20 +144,14 @@ class Recommender(Singleton):
         else:
             self.items_by_popularity_updated = time()
 
-        if not self.db:
-            df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int).sum()
-        else:  # Mongodb
-            df_item = pd.DataFrame.from_records(list(self.db['user_ratings'].find())).set_index('_id').sum()
+        df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int).sum()
 
         df_item.sort(ascending=False)
         pop_items = list(df_item.index)
         if len(pop_items) >= max_items:
             self.items_by_popularity = pop_items
         else:
-            if not self.db:
-                all_items = set(self.items.keys())
-            else:
-                all_items = set([ d["_id"] for d in self.db['items'].find({}, {"_id": 1})])
+            all_items = set(self.items.keys())
             self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
 
 
@@ -320,17 +180,12 @@ class Recommender(Singleton):
         :return:
         """
         user_id = str(user_id).replace('.', '')
-        if not self.db:
-            self.user_ratings[user_id].pop(item_id, None)
-            self.item_ratings[item_id].pop(user_id, None)
-            self.items[item_id] = {}  # just insert the bare id. quite useless because it is a defaultdict, but in case .keys() we can count the # of items
-        else:
-            self.db['user_ratings'].remove(
-                {"_id": user_id, item_id: {"$exists": True}})
+        self.user_ratings[user_id].pop(item_id, None)
+        self.item_ratings[item_id].pop(user_id, None)
+        self.items[item_id] = {}  # just insert the bare id. quite useless because it is a defaultdict, but in case .keys() we can count the # of items
 
-            self.db['item_ratings'].remove(
-                {"_id": item_id, user_id: {"$exists": True}})
-
+    def insert_item(self):
+        pass
 
     def insert_rating(self, user_id, item_id, rating=3, item_info=None, only_info=False):
         """
@@ -363,114 +218,57 @@ class Recommender(Singleton):
 
         # Now fill the dicts or the Mongodb collections if available
         user_id = str(user_id).replace('.', '')
-        if not self.db:   # fill dicts and work only in memory
-            if self.items.get(item_id):
-                item = self.items.get(item_id)
-                # Do categories only if the item is stored
-                if len(item_info) > 0:
-                    for k,v in item.items():
-                        if k in item_info:
-                            # Some items' attributes are lists (e.g. tags: [])
-                            # or, worse, string which can represent lists...
-                            try:
-                                v = json.loads(v.replace("'", '"'))
-                            except:
-                                pass
-                            if not hasattr(v, '__iter__'):
-                                values = [v]
-                            else:
-                                values = v
-                            self.info_used.add(k)
-                            # we cannot set the rating, because we want to keep the info
-                            # that a user has read N books of, say, the same author,
-                            # category etc.
-                            # We could sum all the ratings and count the a result as "big rating".
-                            # Reading N books of author A and rating them 5 would be the same as reading
-                            # 5*N books of author B and rating them 1.
-                            # Still:
-                            # 1) we don't want ratings for category to skyrocket, so we have to take the average
-                            # 2) if a user changes their idea on rating a book, it should not add up. Average
-                            #   is not perfect, but close enough. Take total number of ratings and total rating
-                            for value in values:
-                                if len(str(value)) > 0:
-                                    self.tot_categories_user_ratings[k][user_id][value] += int(rating)
-                                    self.n_categories_user_ratings[k][user_id][value] += 1
-                                    # for the co-occurrence matrix is not necessary to do the same for item, but better do it
-                                    # in case we want to compute similarities etc using categories
-                                    self.tot_categories_item_ratings[k][value][user_id] += int(rating)
-                                    self.n_categories_item_ratings[k][value][user_id] += 1
 
-            else:
-                self.insert_item({"_id": item_id})
-            # Do item always, at least is for categories profiling
-            if not only_info:
-                self.user_ratings[user_id][item_id] = float(rating)
-                self.item_ratings[item_id][user_id] = float(rating)
-        # MongoDB
+        if self.items.get(item_id):
+            item = self.items.get(item_id)
+            # Do categories only if the item is stored
+            if len(item_info) > 0:
+                for k,v in item.items():
+                    if k in item_info:
+                        # Some items' attributes are lists (e.g. tags: [])
+                        # or, worse, string which can represent lists...
+                        try:
+                            v = json.loads(v.replace("'", '"'))
+                        except:
+                            pass
+
+                        if not hasattr(v, '__iter__'):
+                            values = [v]
+                        else:
+                            values = v
+                        self.info_used.add(k)
+                        # we cannot set the rating, because we want to keep the info
+                        # that a user has read N books of, say, the same author,
+                        # category etc.
+                        # We could sum all the ratings and count the a result as "big rating".
+                        # Reading N books of author A and rating them 5 would be the same as reading
+                        # 5*N books of author B and rating them 1.
+                        # Still:
+                        # 1) we don't want ratings for category to skyrocket, so we have to take the average
+                        # 2) if a user changes their idea on rating a book, it should not add up. Average
+                        #   is not perfect, but close enough. Take total number of ratings and total rating
+                        for value in values:
+                            if len(str(value)) > 0:
+                                self.tot_categories_user_ratings[k][user_id][value] += int(rating)
+                                self.n_categories_user_ratings[k][user_id][value] += 1
+                                # for the co-occurrence matrix is not necessary to do the same for item, but better do it
+                                # in case we want to compute similarities etc using categories
+                                self.tot_categories_item_ratings[k][value][user_id] += int(rating)
+                                self.n_categories_item_ratings[k][value][user_id] += 1
+
         else:
-            # If the item is not stored, we don't have its categories
-            # Therefore do categories only if the item is found stored
-            item = self.db['items'].find_one({"_id": item_id})
-            if item:
-                if len(item_info) > 0:
-                    self.logger.debug('[insert_rating] Looking for the following info: %s', item_info)
-                    for k, v in item.items():
-                        if k in item_info and v is not None:  # sometimes the value IS None
-                            self.logger.debug("[insert_rating] Adding %s to info_used and create relative collections",
-                                              k)
+            self.insert_item({"_id": item_id})
+        # Do item always, at least is for categories profiling
+        if not only_info:
+            self.user_ratings[user_id][item_id] = float(rating)
+            self.item_ratings[item_id][user_id] = float(rating)
 
-                            users_coll_name = self._coll_name(k, 'user')
-                            items_coll_name = self._coll_name(k, 'item')
 
-                            self.db['utils'].update({"_id": 1},
-                                                    {"$addToSet": {'info_used': k}},
-                                                    upsert=True)
+    def get_recommendations_item_based():
+        pass
 
-                            # Some items' attributes are lists (e.g. tags: [])
-                            try:
-                                v = json.loads(v.replace("'", '"'))
-                            except:
-                                pass
-                            if not hasattr(v, '__iter__'):
-                                values = [str(v)]
-                            else:
-                                values = [str(i) for i in v]  # It's going to be a key, no numbers
-
-                            # see comments above
-                            for value in values:
-                                if len(value) > 0:
-                                    self.db['tot_' + users_coll_name].update({'_id': user_id},
-                                                                             {'$inc': {value: float(rating)}},
-                                                                              upsert=True)
-                                    self.db['n_' + users_coll_name].update({'_id': user_id},
-                                                   {'$inc': {value: 1}},
-                                                    upsert=True)
-                                    self.db['tot_' + items_coll_name].update({'_id': value},
-                                                   {'$inc': {user_id: float(rating)}},
-                                                    upsert=True)
-                                    self.db['n_' + items_coll_name].update({'_id': value},
-                                                   {'$inc': {user_id: 1}},
-                                                    upsert=True)
-                                    self.db['items'].update(
-                                        {"_id": item_id},
-                                        {"$set": {k: value}},
-                                        upsert=True
-                                    )
-            else:
-                self.insert_item({"_id": item_id})  # Obviously there won't be categories...
-
-            if not only_info:
-                self.db['user_ratings'].update(
-                    {"_id": user_id},
-                    {"$set": {item_id: float(rating)}},
-                    upsert=True
-                )
-                self.db['item_ratings'].update(
-                    {"_id": item_id},
-                    {"$set": {user_id: float(rating)}},
-                    upsert=True
-                )
-
+    def get_recommendations_popularity_based():
+        pass
 
     def get_recommendations(self, user_id, max_recs=50, fast=False, algorithm='item_based'):
         """
@@ -495,52 +293,18 @@ class Recommender(Singleton):
         item_based = False  # has user rated some items?
         info_based = []  # user has rated the category (e.g. the category "author" etc)
         df_user = None
-        if not self.db:
-            if self.user_ratings.get(user_id):  # compute item-based rec only if user has rated smt
-                item_based = True
-                #Just take user_id for the user vector
-                df_user = pd.DataFrame(self.user_ratings).fillna(0).astype(int)[[user_id]]
-            info_used = self.info_used
-            if len(info_used) > 0:
-                for i in info_used:
-                    if self.tot_categories_user_ratings[i].get(user_id):
-                        info_based.append(i)
-                        df_tot_cat_user[i] = pd.DataFrame(self.tot_categories_user_ratings[i]).fillna(0).astype(int)[[user_id]]
-                        df_n_cat_user[i] = pd.DataFrame(self.n_categories_user_ratings[i]).fillna(0).astype(int)[[user_id]]
-        else:  # Mongodb
-            # Did the user rate anything?
-            if self.db['user_ratings'].find_one({"_id": user_id}):
-                item_based = True
-                try:
-                    df_user = pd.DataFrame.from_records(list(self.db['item_ratings'].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-                except:
-                    self.logger.warning("[get_recommendations] item and user ratings colls not synced")
-                    self._sync_user_item_ratings()
-                    df_user = pd.DataFrame.from_records(list(self.db['item_ratings'].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-            try:
-                info_used = self.db['utils'].find_one({"_id": 1}, {'info_used': 1, "_id": 0}).get('info_used', [])
-            except:
-                info_used = []
-            self.logger.debug("[get_recommendations] info_used: %s", info_used)
-            if len(info_used) > 0:
-                for i in info_used:
-                    item_coll_name = self._coll_name(i, 'item')
-                    user_coll_name = self._coll_name(i, 'user')
-                    if self.db['tot_' + user_coll_name].find_one({"_id": user_id}):
-                        try:
-                            info_based.append(i)
-                            self.logger.debug("[get_recommendations] pd.DataFrame.from_records(list(db['tot_' + '%s'].find())).set_index('_id').fillna(0).astype(int)[['%s']]", item_coll_name, user_id)
-                            df_tot_cat_user[i] = pd.DataFrame.from_records(list(self.db['tot_' + item_coll_name].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-                            df_n_cat_user[i] = pd.DataFrame.from_records(list(self.db['n_' + item_coll_name].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-                            self.logger.debug("[get_recommendations]. df_tot_cat_user[%s]:%s\n", i, df_tot_cat_user[i])
-                        except:
-                            self.logger.warning("[get_recommendations. item and user ratings colls not synced for %s", i)
-                            self._sync_user_item_ratings()
-                            info_based.append(i)
-                            self.logger.debug("[get_recommendations] pd.DataFrame.from_records(list(db['tot_' + '%s'].find())).set_index('_id').fillna(0).astype(int)[['%s']]", item_coll_name, user_id)
-                            df_tot_cat_user[i] = pd.DataFrame.from_records(list(self.db['tot_' + item_coll_name].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-                            df_n_cat_user[i] = pd.DataFrame.from_records(list(self.db['n_' + item_coll_name].find())).set_index('_id').fillna(0).astype(int)[[user_id]]
-                            self.logger.debug("[get_recommendations]. df_tot_cat_user[%s]:%s\n", i, df_tot_cat_user[i])
+
+        if self.user_ratings.get(user_id):  # compute item-based rec only if user has rated smt
+            item_based = True
+            #Just take user_id for the user vector
+            df_user = pd.DataFrame(self.user_ratings).fillna(0).astype(int)[[user_id]]
+        info_used = self.info_used
+        if len(info_used) > 0:
+            for i in info_used:
+                if self.tot_categories_user_ratings[i].get(user_id):
+                    info_based.append(i)
+                    df_tot_cat_user[i] = pd.DataFrame(self.tot_categories_user_ratings[i]).fillna(0).astype(int)[[user_id]]
+                    df_n_cat_user[i] = pd.DataFrame(self.n_categories_user_ratings[i]).fillna(0).astype(int)[[user_id]]
 
         if item_based:
             try:
@@ -608,10 +372,8 @@ class Recommender(Singleton):
                 for k, v in rec.iteritems():
                     #self.logger.debug("[get_recommendations] rec_item_id: %s", k)
                     try:
-                        if not self.db:
-                            item_info_value = self.items[k][cat]
-                        else:
-                            item_info_value = self.db['items'].find_one({"_id": k}, {"_id": 0, cat: 1}).get(cat)
+                        item_info_value = self.items[k][cat]
+
                         #self.logger.debug("DEBUG get_recommendations. item value for %s: %s", cat, item_info_value)
                         # In case the info value is not in cat_rec (as it can obviously happen
                         # because a rec'd item coming from most popular can have the value of
@@ -639,11 +401,7 @@ class Recommender(Singleton):
         :param user_id:
         :return:
         """
-        if self.db:
-            r = self.db['user_ratings'].find_one({"_id": user_id}, {"_id": 0})
-            return r if r else {}
-        else:
-            return self.user_ratings[user_id]
+        return self.user_ratings[user_id]
 
 
     def get_items(self, n=10):
@@ -652,22 +410,12 @@ class Recommender(Singleton):
         :param n: number of items
         :return:
         """
-        if self.db:
-            items = self.db['items'].find()
-            result = []
-            for it in items:
-                result.append(it)
-                if len(result) > n:
-                    break
-            return result
-
-        else:
-            result = []
-            for k in self.items.keys():
-                result.append(self.items[k])
-                if len(result) > n:
-                    break
-            return result
+        result = []
+        for k in self.items.keys():
+            result.append(self.items[k])
+            if len(result) > n:
+                break
+        return result
 
 
     def drop_db(self):
@@ -676,6 +424,8 @@ class Recommender(Singleton):
         Return list of collections
         :return:
         """
-        if self.db:
-            self.mongo_client.drop_database(self.mongo_db_name)
-            return self.db.collection_names()
+        pass
+        #if self.db:
+        #    self.mongo_client.drop_database(self.mongo_db_name)
+        #    return self.db.collection_names()
+
