@@ -165,6 +165,16 @@ class Database(DAL.DALBase, Singleton):
             return False
         return True
 
+    def get_all_item_ratings(self):
+        """
+        return a dictionary with all ratings:
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            ...
+            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+        :return: a dictionary with ratings
+        """
+        return self.users_ratings_tbl
+
     def get_user_ratings(self, user_id):
         """
         retrieve the list of ratings made by the user

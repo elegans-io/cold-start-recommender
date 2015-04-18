@@ -144,6 +144,19 @@ class DALBase(Observable):
         #TODO: implement me
         return
 
+    @abc.abstractmethod
+    def get_all_item_ratings(self):
+        """
+        return a dictionary with all ratings:
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            ...
+            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+        :return: a dictionary with ratings
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
     def get_user_ratings(self, user_id):
         """
         retrieve the list of ratings made by the user
@@ -152,11 +165,8 @@ class DALBase(Observable):
         :param user_id: user id
         :return: the ratings of a user, if the user does not exists returns an empty dictionary
         """
-        try:
-            recomm = self.users_ratings_tbl[user_id]
-        except KeyError:
-            recomm = {}
-        return recomm
+        #TODO: implement me
+        return
 
     @abc.abstractmethod
     @observable

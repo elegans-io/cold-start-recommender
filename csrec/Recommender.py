@@ -12,8 +12,17 @@ class Recommender(Singleton):
     """
     def __init__(self, db, default_rating=3, max_rating=5, log_level=logging.DEBUG):
         # Loggin stuff
+        self.logger = logging.getLogger("csrc")
+        self.logger.setLevel(log_level)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        self.logger.addHandler(ch)
+        self.logger.debug("============ Logger initialized ================")
+
+        #initialization of datastore attribute
         self.db = db
 
+        #registering callback function for datastore events
         self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
         self.db.register(self.db.remove_item, self.on_remove_item)
         self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
@@ -22,19 +31,16 @@ class Recommender(Singleton):
         self.db.register(self.db.serialize, self.on_serialize)
         self.db.register(self.db.restore, self.on_restore)
 
-        self.logger = logging.getLogger("csrc")
-        self.logger.setLevel(log_level)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        self.logger.addHandler(ch)
-        self.logger.debug("============ Creating a Recommender Instance ================")
+        # Algorithm's specific attributes
+        self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
+        self.cooccurrence_updated = 0.0
 
+        #old attributes
         self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
         self.default_rating = default_rating  # Rating inserted by default
         self.max_rating = max_rating
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self._categories_cooccurrence = {} # cooccurrence of categories
-        self.cooccurrence_updated = 0.0  # Time of update
         self.item_ratings = defaultdict(dict)  # matrix of ratings for a item (inmemory testing)
         self.user_ratings = defaultdict(dict)  # matrix of ratings for a user (inmemory testing)
         self.items = defaultdict(dict)  # matrix of item's information {item_id: {"Author": "AA. VV."....}
@@ -82,6 +88,16 @@ class Recommender(Singleton):
         """
         return str(typ) + '_' + str(k) + '_ratings'
 
+    def _create_cooccurrence_new(self):
+        all_ratings = self.db.get_all_item_ratings
+        df = pd.DataFrame(all_ratings).fillna(0).astype(int) #convert dictionary to pandas dataframe
+
+        #calculate co-occurrence matrix
+        df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix
+        co_occurrence = df_items.fillna(0).dot(df_items.T)
+        #np.fill_diagonal(co_occurrence.values, 0)
+        self._items_cooccurrence = co_occurrence
+        self.cooccurrence_updated = time()
 
     def _create_cooccurrence(self):
         """
@@ -118,59 +134,6 @@ class Recommender(Singleton):
         #Doing that only for the mongodb case..
         self.logger.warning("[_sync_user_item_ratings] Syncronyzing item_ratings with user_ratings data")
 
-    def insert_item(self, item, _id="_id"):
-        """
-        Insert the whole document either in self.items or in db.items.
-        self.items is a nested dict {_id: dict(item), ....}
-        :param item: {_id: item_id, cat1: ...} or {item_id_key: item_id, cat1: ....}
-        :return: None
-        """
-        self.item_id_key = _id
-        self.items[item[_id]] = item
-
-
-    def reconcile_ids(self, id_old, id_new):
-        """
-        Create id_new if not there, add data of id_old into id_new.
-        Compute the co-occurrence matrix.
-        NB id_old is removed!
-        :param id_new:
-        :param id_old:
-        :return: None
-        """
-        id_new = str(id_new).replace(".", "")
-        id_old = str(id_old).replace(".", "")
-
-        # user-item
-        for key, value in self.user_ratings[id_old].items():
-            self.user_ratings[id_new][key] = self.user_ratings[id_old][key]
-        self.user_ratings.pop(id_old)
-
-        for k, v in self.item_ratings.items():
-            if v.has_key(id_old):
-                v[id_new] = v.pop(id_old)
-
-        # user-categories
-        if len(self.info_used) > 0:
-            for i in self.info_used:
-                for key, value in self.tot_categories_user_ratings[i][id_old].items():
-                    self.tot_categories_user_ratings[i][id_new][key] = self.tot_categories_user_ratings[i][id_old][key]
-                self.tot_categories_user_ratings[i].pop(id_old)
-
-                for k, v in self.tot_categories_item_ratings[i].items():
-                    if v.has_key(id_old):
-                        v[id_new] = v.pop(id_old)
-
-                for key, value in self.n_categories_user_ratings[i][id_old].items():
-                    self.n_categories_user_ratings[i][id_new][key] = self.n_categories_user_ratings[i][id_old][key]
-                self.n_categories_user_ratings[i].pop(id_old)
-
-                for k, v in self.n_categories_item_ratings[i].items():
-                    if v.has_key(id_old):
-                        v[id_new] = v.pop(id_old)
-
-        self._create_cooccurrence()
-
 
     def compute_items_by_popularity(self, max_items=10, fast=False):
         """
@@ -191,36 +154,6 @@ class Recommender(Singleton):
         else:
             all_items = set(self.items.keys())
             self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
-
-
-    def get_similar_item(self, item_id, user_id=None, algorithm='simple'):
-        """
-        TODO
-        Simple: return the row of the co-occurrence matrix ordered by score or,
-        if user_id is not None, multiplied times the user_id rating
-        (not transposed!) so to weigh the similarity score with the
-        rating of the user
-        :param item_id: Id of the item
-        :param user_id: Id of the user
-        :param algorithm: keep it simple...
-        :return:
-        """
-        user_id = str(user_id).replace('.', '')
-        pass
-
-
-    def remove_rating(self, user_id, item_id):
-        """
-        Remove ratings from item and user. This cannot be undone for categories
-        (only thing we could do is subtracting the average value from sum and n-1)
-        :param user_id:
-        :param item_id:
-        :return:
-        """
-        user_id = str(user_id).replace('.', '')
-        self.user_ratings[user_id].pop(item_id, None)
-        self.item_ratings[item_id].pop(user_id, None)
-        self.items[item_id] = {}  # just insert the bare id. quite useless because it is a defaultdict, but in case .keys() we can count the # of items
 
     def insert_rating(self, user_id, item_id, rating=3, item_info=None, only_info=False):
         """
@@ -297,13 +230,6 @@ class Recommender(Singleton):
         if not only_info:
             self.user_ratings[user_id][item_id] = float(rating)
             self.item_ratings[item_id][user_id] = float(rating)
-
-
-    def get_recommendations_item_based():
-        pass
-
-    def get_recommendations_popularity_based():
-        pass
 
     def get_recommendations(self, user_id, max_recs=50, fast=False, algorithm='item_based'):
         """
@@ -428,30 +354,3 @@ class Recommender(Singleton):
             return [i for i in global_rec.index if not rated.get(i, False)][:max_recs]
         else:
             return list(global_rec.index)[:max_recs]
-
-
-    def get_items(self, n=10):
-        """
-        Return n items
-        :param n: number of items
-        :return:
-        """
-        result = []
-        for k in self.items.keys():
-            result.append(self.items[k])
-            if len(result) > n:
-                break
-        return result
-
-
-    def drop_db(self):
-        """
-        Drop the whole db, unsafe!
-        Return list of collections
-        :return:
-        """
-        pass
-        #if self.db:
-        #    self.mongo_client.drop_database(self.mongo_db_name)
-        #    return self.db.collection_names()
-
