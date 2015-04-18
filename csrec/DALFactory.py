@@ -1,8 +1,14 @@
 __author__ = "Angelo Leto"
 __email__ = "angleto@gmail.com"
 
-import memDAL
+import MemDAL
 
-def DatabaseFactory(name='mem'):
+# database abstraction layer factory
+def DALFactory(name='mem', params = {}):
     if name == "mem":
-        return memDAL.Database()
+        dal = MemDAL.Database()
+        try:
+            dal.init(params = params)
+        except:
+            return None
+        return dal

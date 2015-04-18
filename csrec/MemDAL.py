@@ -9,8 +9,9 @@ import sys
 import pickle # serialization library
 import DAL
 from Observable import observable
+from tools.Singleton import Singleton
 
-class Database(DAL.DALBase):
+class Database(DAL.DALBase, Singleton):
     def __init__(self):
         DAL.DALBase.__init__(self)
 
@@ -19,7 +20,7 @@ class Database(DAL.DALBase):
         self.users_ratings_tbl = None
         self.users_recomm_tbl = None
 
-    def init(self, params):
+    def init(self, params = {}):
         self.__params_dictionary.update(params)
         rValue = True
 
@@ -34,7 +35,6 @@ class Database(DAL.DALBase):
 
         return rValue
 
-    @observable
     def insert_or_update_recomms(self, user_id, recommendations):
         """
         insert a new recommendation for a user
@@ -49,10 +49,9 @@ class Database(DAL.DALBase):
         self.users_recomm_tbl[user_id] = recommendations
         return True
 
-    @observable
     def remove_recomms(self, item_id):
         """
-        remove an item from datastore, remove also all references from ratings
+        remove an item from datastore
 
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
@@ -63,13 +62,23 @@ class Database(DAL.DALBase):
             return False
         return True
 
+    def reset_recomms(self):
+        """
+        remove all recommendations from datastore
+
+        :param item_id: item id
+        :return: True if the operation was successfully executed, otherwise return False
+        """
+        self.users_recomm_tbl = {}
+        return True
+
     def get_user_recomms(self, user_id):
         """
         retrieve the list of recommendations for the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
 
         :param user_id: user id
-        :return: the ratings of a user, if the user does not exists returns an empty dictionary
+        :return: the recommendations for a user, if the user does not exists returns an empty dictionary
         """
         try:
             recomm = self.users_recomm_tbl[user_id]
@@ -108,6 +117,20 @@ class Database(DAL.DALBase):
             return False
         return True
 
+    def get_item(self, item_id):
+        """
+        return an item by ID
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+
+        :param user_id: user id
+        :return: the item record
+        """
+        try:
+            item = self.items_tbl[item_id]
+        except KeyError:
+            return {}
+        return item
+
     @observable
     def insert_or_update_item_rating(self, user_id, item_id, rating=3.0):
         """
@@ -141,6 +164,20 @@ class Database(DAL.DALBase):
         except KeyError:
             return False
         return True
+
+    def get_user_ratings(self, user_id):
+        """
+        retrieve the list of ratings made by the user
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+
+        :param user_id: user id
+        :return: the ratings of a user, if the user does not exists returns an empty dictionary
+        """
+        try:
+            recomm = self.users_ratings_tbl[user_id]
+        except KeyError:
+            recomm = {}
+        return recomm
 
     @observable
     def reconcile_user(self, old_user_id, new_user_id):

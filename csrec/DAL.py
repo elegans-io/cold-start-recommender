@@ -13,7 +13,7 @@ class DALBase(Observable):
         Observable.__init__(self)
 
     @abc.abstractmethod
-    def init(self, params):
+    def init(self, params = {}):
         """
         initialization method
 
@@ -24,7 +24,6 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    @observable
     def insert_or_update_recomms(self, user_id, recommendations):
         """
         insert a new recommendation for a user
@@ -40,10 +39,20 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    @observable
     def remove_recomms(self, item_id):
         """
-        remove an item from datastore, remove also all references from ratings
+        remove an item from datastore
+
+        :param item_id: item id
+        :return: True if the operation was successfully executed, otherwise return False
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def reset_recomms(self):
+        """
+        remove all recommendations from datastore
 
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
@@ -58,7 +67,7 @@ class DALBase(Observable):
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
 
         :param user_id: user id
-        :return: the ratings of a user, if the user does not exists returns an empty dictionary
+        :return: the recommendations for a user, if the user does not exists returns an empty dictionary
         """
         #TODO: implement me
         return
@@ -85,10 +94,22 @@ class DALBase(Observable):
     @observable
     def remove_item(self, item_id):
         """
-        remove an item from datastore, remove also all references from ratings
+        remove an item from datastore
 
         :param item_id: item id
-        :return: True if the operation was successfully executed, otherwise return False
+        :return:
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def get_item(self, item_id):
+        """
+        return an item by ID
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+
+        :param user_id: user id
+        :return: the item record
         """
         #TODO: implement me
         return
@@ -122,6 +143,20 @@ class DALBase(Observable):
         """
         #TODO: implement me
         return
+
+    def get_user_ratings(self, user_id):
+        """
+        retrieve the list of ratings made by the user
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+
+        :param user_id: user id
+        :return: the ratings of a user, if the user does not exists returns an empty dictionary
+        """
+        try:
+            recomm = self.users_ratings_tbl[user_id]
+        except KeyError:
+            recomm = {}
+        return recomm
 
     @abc.abstractmethod
     @observable

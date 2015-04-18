@@ -10,8 +10,18 @@ class Recommender(Singleton):
     """
     Cold Start Recommender
     """
-    def __init__(self, default_rating=3, max_rating=5, log_level=logging.DEBUG):
+    def __init__(self, db, default_rating=3, max_rating=5, log_level=logging.DEBUG):
         # Loggin stuff
+        self.db = db
+
+        self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
+        self.db.register(self.db.remove_item, self.on_remove_item)
+        self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
+        self.db.register(self.db.remove_item_rating, self.on_remove_item_rating)
+        self.db.register(self.db.reconcile_user, self.on_reconcile_user)
+        self.db.register(self.db.serialize, self.on_serialize)
+        self.db.register(self.db.restore, self.on_restore)
+
         self.logger = logging.getLogger("csrc")
         self.logger.setLevel(log_level)
         ch = logging.StreamHandler()
@@ -37,6 +47,34 @@ class Recommender(Singleton):
         self.n_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.items_by_popularity = []
         self.items_by_popularity_updated = 0.0  # Time of update
+
+    def on_insert_or_update_item(self, item_id, attributes, return_value):
+        print "on_insert_or_update_item"
+        pass
+
+    def on_remove_item(self, item_id):
+        print "on_remove_item"
+        pass
+
+    def on_insert_or_update_item_rating(self, user_id, item_id, rating=3.0, return_value=None):
+        print "on_insert_or_update_item_rating"
+        pass
+
+    def on_remove_item_rating(self, user_id, item_id, return_value):
+        print "on_remove_item_rating"
+        pass
+
+    def on_reconcile_user(self, old_user_id, new_user_id, return_value):
+        print "on_reconcile_user"
+        pass
+
+    def on_serialize(self, filepath):
+        print "on_serialize"
+        pass
+
+    def on_restore(self, filepath):
+        print "on_restore"
+        pass
 
     def _coll_name(self, k, typ):
         """
@@ -183,9 +221,6 @@ class Recommender(Singleton):
         self.user_ratings[user_id].pop(item_id, None)
         self.item_ratings[item_id].pop(user_id, None)
         self.items[item_id] = {}  # just insert the bare id. quite useless because it is a defaultdict, but in case .keys() we can count the # of items
-
-    def insert_item(self):
-        pass
 
     def insert_rating(self, user_id, item_id, rating=3, item_info=None, only_info=False):
         """
@@ -393,15 +428,6 @@ class Recommender(Singleton):
             return [i for i in global_rec.index if not rated.get(i, False)][:max_recs]
         else:
             return list(global_rec.index)[:max_recs]
-
-
-    def get_user_info(self, user_id):
-        """
-        Return user's rated items: {'item1': 3, 'item3': 1...}
-        :param user_id:
-        :return:
-        """
-        return self.user_ratings[user_id]
 
 
     def get_items(self, n=10):
