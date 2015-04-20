@@ -10,8 +10,8 @@ class Recommender(Singleton):
     """
     Cold Start Recommender
     """
-    def __init__(self, db, default_rating=3, max_rating=5, log_level=logging.DEBUG):
-        # Loggin stuff
+    def __init__(self, db, max_rating=5, log_level=logging.DEBUG):
+        # Logger initialization
         self.logger = logging.getLogger("csrc")
         self.logger.setLevel(log_level)
         ch = logging.StreamHandler()
@@ -34,17 +34,15 @@ class Recommender(Singleton):
         # Algorithm's specific attributes
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self.cooccurrence_updated = 0.0
+        self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
 
         #old attributes
-        self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
-        self.default_rating = default_rating  # Rating inserted by default
         self.max_rating = max_rating
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self._categories_cooccurrence = {} # cooccurrence of categories
+
         self.item_ratings = defaultdict(dict)  # matrix of ratings for a item (inmemory testing)
         self.user_ratings = defaultdict(dict)  # matrix of ratings for a user (inmemory testing)
-        self.items = defaultdict(dict)  # matrix of item's information {item_id: {"Author": "AA. VV."....}
-        self.item_id_key = 'id'
 
         # categories --same as above, but separated as they are not always available
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
@@ -82,45 +80,33 @@ class Recommender(Singleton):
         print "on_restore"
         pass
 
-    def _coll_name(self, k, typ):
-        """
-        e.g. user_author_ratings
-        """
-        return str(typ) + '_' + str(k) + '_ratings'
-
-    def _create_cooccurrence_new(self):
-        all_ratings = self.db.get_all_item_ratings
-        df = pd.DataFrame(all_ratings).fillna(0).astype(int) #convert dictionary to pandas dataframe
-
-        #calculate co-occurrence matrix
-        df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix
-        co_occurrence = df_items.fillna(0).dot(df_items.T)
-        #np.fill_diagonal(co_occurrence.values, 0)
-        self._items_cooccurrence = co_occurrence
-        self.cooccurrence_updated = time()
-
     def _create_cooccurrence(self):
         """
         Create or update the co-occurrence matrix
         :return:
         """
+        all_ratings = self.db.get_all_item_ratings()
+        df = pd.DataFrame(all_ratings).fillna(0).astype(int) #convert dictionary to pandas dataframe
+
+        #calculate co-occurrence matrix
+        df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix and normalize to 1
+        co_occurrence = df_items.fillna(0).dot(df_items.T)
+        #np.fill_diagonal(co_occurrence.values, 0) # set diagonal to 0, not needed
+        self._items_cooccurrence = co_occurrence
+
+        #update co-occurrence matrix for items categories
         df_tot_cat_item = {}
 
-        # Items' vectors
-        df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int)
-        # Categories' vectors
-        info_used = self.info_used
-        if len(info_used) > 0:
-            for i in info_used:
+        if len(self.info_used) > 0:
+
+            for i in self.info_used:
                 df_tot_cat_item[i] = pd.DataFrame(self.tot_categories_item_ratings[i]).fillna(0).astype(int)
 
-        df_item = (df_item / df_item).replace(np.inf, 0)  # normalize to one to build the co-occurrence
-        self._items_cooccurrence = df_item.T.dot(df_item)
-        if len(info_used) > 0:
-            for i in info_used:
+            for i in self.info_used:
                 if type(df_tot_cat_item.get(i)) == pd.DataFrame:
                     df_tot_cat_item[i] = (df_tot_cat_item[i] / df_tot_cat_item[i]).replace(np.inf, 0)
                     self._categories_cooccurrence[i] = df_tot_cat_item[i].T.dot(df_tot_cat_item[i])
+
         self.cooccurrence_updated = time()
 
 
@@ -152,7 +138,7 @@ class Recommender(Singleton):
         if len(pop_items) >= max_items:
             self.items_by_popularity = pop_items
         else:
-            all_items = set(self.items.keys())
+            all_items = set(self.db.get_all_items.keys())
             self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
 
     def insert_rating(self, user_id, item_id, rating=3, item_info=None, only_info=False):
@@ -187,8 +173,8 @@ class Recommender(Singleton):
         # Now fill the dicts or the Mongodb collections if available
         user_id = str(user_id).replace('.', '')
 
-        if self.items.get(item_id):
-            item = self.items.get(item_id)
+        item = self.db.get_item(item_id)
+        if item:
             # Do categories only if the item is stored
             if len(item_info) > 0:
                 for k,v in item.items():
@@ -225,7 +211,7 @@ class Recommender(Singleton):
                                 self.n_categories_item_ratings[k][value][user_id] += 1
 
         else:
-            self.insert_item({"_id": item_id})
+            self.db.insert_item(item_id, {})
         # Do item always, at least is for categories profiling
         if not only_info:
             self.user_ratings[user_id][item_id] = float(rating)
@@ -255,10 +241,10 @@ class Recommender(Singleton):
         info_based = []  # user has rated the category (e.g. the category "author" etc)
         df_user = None
 
-        if self.user_ratings.get(user_id):  # compute item-based rec only if user has rated smt
+        if self.db.get_item_ratings(user_id):  # compute item-based rec only if user has rated smt
             item_based = True
             #Just take user_id for the user vector
-            df_user = pd.DataFrame(self.user_ratings).fillna(0).astype(int)[[user_id]]
+            df_user = pd.DataFrame(self.db.get_item_ratings(user_id)).fillna(0).astype(int)
         info_used = self.info_used
         if len(info_used) > 0:
             for i in info_used:

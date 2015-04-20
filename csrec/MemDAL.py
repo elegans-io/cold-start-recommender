@@ -16,9 +16,9 @@ class Database(DAL.DALBase, Singleton):
         DAL.DALBase.__init__(self)
 
         self.__params_dictionary = { }  # abstraction layer initialization parameters
-        self.items_tbl = None
-        self.users_ratings_tbl = None
-        self.users_recomm_tbl = None
+        self.items_tbl = None # table with items
+        self.users_ratings_tbl = None # table with users rating
+        self.users_recomm_tbl = None # table with recommendations
 
     def init(self, params = {}):
         self.__params_dictionary.update(params)
@@ -27,8 +27,9 @@ class Database(DAL.DALBase, Singleton):
         if rValue :
             try:
                 self.items_tbl = {}
-                self.users_ratings_tbl = {}
                 self.users_recomm_tbl = {}
+
+                self.users_ratings_tbl = {}
             except:
                 print >> sys.stderr, ("Error: unable to initialize tables: %d" % (__base_error_code__))
                 rValue = False
@@ -117,6 +118,25 @@ class Database(DAL.DALBase, Singleton):
             return False
         return True
 
+    def get_all_items(self):
+        """
+        return a dictionary with all items:
+            item_id0 : {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+            ...
+            item_idN : {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+
+        :return: a dictionary with ratings
+        """
+        return self.items_tbl
+
     def get_item(self, item_id):
         """
         return an item by ID
@@ -175,7 +195,7 @@ class Database(DAL.DALBase, Singleton):
         """
         return self.users_ratings_tbl
 
-    def get_user_ratings(self, user_id):
+    def get_item_ratings(self, user_id):
         """
         retrieve the list of ratings made by the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -275,7 +295,7 @@ class Database(DAL.DALBase, Singleton):
         try:
             with open(filepath, 'wb') as f:
                 data_to_serialize = { 'items':self.items_tbl,
-                                    'user_ratings':self.users_ratings_tbl,
+                                    'item_ratings':self.users_ratings_tbl,
                                     'user_recomms':self.users_recomm_tbl}
                 pickle.dump(data_to_serialize, f)
         except:
@@ -297,7 +317,7 @@ class Database(DAL.DALBase, Singleton):
             with open(filepath, 'rb') as f:
                 data_from_file = pickle.load(f)
                 self.items_tbl = data_from_file['items']
-                self.users_ratings_tbl = data_from_file['user_ratings']
+                self.users_ratings_tbl = data_from_file['item_ratings']
                 self.users_recomm_tbl =  data_from_file['user_recomms']
         except:
             r_value = False

@@ -103,11 +103,35 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
+    def get_all_items(self):
+        """
+        return a dictionary with all items:
+            item_id0 : {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+            ...
+            item_idN : {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+
+        :return: a dictionary with ratings
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
     def get_item(self, item_id):
         """
         return an item by ID
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-
+            {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
         :param user_id: user id
         :return: the item record
         """
@@ -157,7 +181,7 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    def get_user_ratings(self, user_id):
+    def get_item_ratings(self, user_id):
         """
         retrieve the list of ratings made by the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
