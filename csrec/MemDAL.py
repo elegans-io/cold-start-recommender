@@ -28,7 +28,6 @@ class Database(DAL.DALBase, Singleton):
             try:
                 self.items_tbl = {}
                 self.users_recomm_tbl = {}
-
                 self.users_ratings_tbl = {}
             except:
                 print >> sys.stderr, ("Error: unable to initialize tables: %d" % (__base_error_code__))
@@ -148,7 +147,7 @@ class Database(DAL.DALBase, Singleton):
         try:
             item = self.items_tbl[item_id]
         except KeyError:
-            return {}
+            return None
         return item
 
     @observable
@@ -283,6 +282,7 @@ class Database(DAL.DALBase, Singleton):
         """
         return self.items_tbl.iteritems()
 
+
     @observable
     def serialize(self, filepath):
         """
@@ -313,6 +313,12 @@ class Database(DAL.DALBase, Singleton):
         """
         r_value = True
         # Write chunks of text data
+
+        #reset existing data
+        self.items_tbl = {}
+        self.users_recomm_tbl = {}
+        self.users_ratings_tbl = {}
+
         try:
             with open(filepath, 'rb') as f:
                 data_from_file = pickle.load(f)

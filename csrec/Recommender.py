@@ -22,7 +22,7 @@ class Recommender(Singleton):
         #initialization of datastore attribute
         self.db = db
 
-        #registering callback function for datastore events
+        #registering callback functions for datastore events
         self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
         self.db.register(self.db.remove_item, self.on_remove_item)
         self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
@@ -45,9 +45,10 @@ class Recommender(Singleton):
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
-        self.n_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.items_by_popularity = []
         self.items_by_popularity_updated = 0.0  # Time of update
+
+        self.last_serialization_time = 0.0 # Time of data backup
 
     def on_insert_or_update_item(self, item_id, attributes, return_value):
         #TODO: to implement
@@ -125,7 +126,6 @@ class Recommender(Singleton):
                                 # for the co-occurrence matrix is not necessary to do the same for item, but better do it
                                 # in case we want to compute similarities etc using categories
                                 self.tot_categories_item_ratings[k][value][user_id] += int(rating)
-                                self.n_categories_item_ratings[k][value][user_id] += 1
 
     def on_remove_item_rating(self, user_id, item_id, return_value):
         #TODO: to implement
@@ -135,13 +135,26 @@ class Recommender(Singleton):
         #TODO: to implement
         pass
 
-    def on_serialize(self, filepath):
-        #TODO: to implement
-        pass
+    def on_serialize(self, filepath, return_value):
+        if return_value:
+            self.last_serialization_time = time()
+        else:
+            self.logger.error("[on_serialize] data backup failed on file %s, last successful backup at: %f" %
+                              (filepath,
+                               self.last_serialization_time))
 
-    def on_restore(self, filepath):
-        #TODO: to implement
-        pass
+    def on_restore(self, filepath, return_value):
+        if not return_value:
+            self.logger.error("[on_restore] restore from serialized data fail: ", filepath)
+
+        self._create_cooccurrence()
+        r_it = self.db.get_item_ratings_iterator()
+        for item in r_it:
+            user_id = item[0]
+            ratings = item[1]
+            for item_id, rating in ratings.items():
+                self.on_insert_or_update_item_rating(user_id=user_id, item_id=item_id, rating=rating, return_value=True)
+
 
     def _create_cooccurrence(self):
         """
@@ -173,18 +186,7 @@ class Recommender(Singleton):
         self.cooccurrence_updated = time()
 
 
-    def _sync_user_item_ratings(self):
-        """
-        It might happen that the user_ratings and the item_ratings
-        are not aligned. It shouldn't, but with users can be profiled,
-        then reconciled with session_id etc, it happened...
-        :return:
-        """
-        #Doing that only for the mongodb case..
-        self.logger.warning("[_sync_user_item_ratings] Syncronyzing item_ratings with user_ratings data")
-
-
-    def compute_items_by_popularity(self, max_items=10, fast=False):
+    def     compute_items_by_popularity(self, max_items=10, fast=False):
         """
         As per name, get self.
         :return: list of popular items, 0=most popular
@@ -201,7 +203,7 @@ class Recommender(Singleton):
         if len(pop_items) >= max_items:
             self.items_by_popularity = pop_items
         else:
-            all_items = set(self.db.get_all_items.keys())
+            all_items = set(self.db.get_all_items().keys())
             self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
 
     def set_item_info(self, item_info):
@@ -260,20 +262,19 @@ class Recommender(Singleton):
                 # dimension
                 if not fast or (time() - self.cooccurrence_updated > 1800):
                     self._create_cooccurrence()
-                self.logger.debug("[get_recommendations] Trying cooccurrence dot df_user")
-                self.logger.debug("[get_recommendations] _items_cooccurrence: %s", self._items_cooccurrence)
-                self.logger.debug("[get_recommendations] df_user: %s", df_user)
+#                self.logger.debug("[get_recommendations] Trying cooccurrence dot df_user")
+#                self.logger.debug("[get_recommendations] _items_cooccurrence: %s", self._items_cooccurrence)
+#                self.logger.debug("[get_recommendations] df_user: %s", df_user)
                 rec = self._items_cooccurrence.T.dot(df_user[user_id])
-                self.logger.debug("[get_recommendations] Rec: %s", rec)
+#                self.logger.debug("[get_recommendations] Rec: %s", rec)
             except:
                 self.logger.debug("[get_recommendations] 1st rec production failed, calling _create_cooccurrence.")
                 try:
                     self._create_cooccurrence()
                     rec = self._items_cooccurrence.T.dot(df_user[user_id])
-                    self.logger.debug("[get_recommendations] Rec: %s", rec)
+#                    self.logger.debug("[get_recommendations] Rec: %s", rec)
                 except:
                     self.logger.warning("[get_recommendations] user_ and item_ratings seem not synced")
-                    self._sync_user_item_ratings()
                     self._create_cooccurrence()
                     rec = self._items_cooccurrence.T.dot(df_user[user_id])
                     self.logger.debug("[get_recommendations] Rec: %s", rec)
@@ -295,7 +296,7 @@ class Recommender(Singleton):
                 if len(rec) == max_recs:
                     break
                 rec.set_value(v, self.max_rating / (i+1.))  # As comment above, starting from max_rating
-        self.logger.debug("[get_recommendations] Rec after item_based or not: %s", rec)
+#        self.logger.debug("[get_recommendations] Rec after item_based or not: %s", rec)
 
         # Now, the worse case we have rec=popular with score starting from max_rating
         # and going down as 1/i (this is item_based == False)
@@ -330,12 +331,12 @@ class Recommender(Singleton):
                         self.logger.error("item %s, category %s", k, cat)
                         logging.exception(e)
         global_rec.sort(ascending=False)
-        self.logger.debug("[get_recommendations] global_rec:\n %s", global_rec)
+#        self.logger.debug("[get_recommendations] global_rec:\n %s", global_rec)
 
         if item_based:
             # If the user has rated all items, return an empty list
             rated = df_user[user_id] != 0
-            self.logger.debug("Rated: %s", rated)
+#            self.logger.debug("Rated: %s", rated)
             return [i for i in global_rec.index if not rated.get(i, False)][:max_recs]
         else:
             return list(global_rec.index)[:max_recs]

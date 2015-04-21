@@ -16,9 +16,9 @@ db = DALFactory(name='mem', params = {}) # instantiate an in memory database
 engine = Recommender(db)
 
 # Montecarlo:
-n_books = 100000
+n_books = 10000
 n_users = 10000
-n_purchases = 10000
+n_purchases = 5000
 n_authors = 100
 n_publishers = 10
 authors = ['A'+str(i) for i in range(1, n_authors+1)]
@@ -49,9 +49,18 @@ while(purchase < n_purchases):
         #print 'user', user_id, 'rated', rating, 'stars item', item_id
         db.insert_or_update_item_rating(user_id = user_id, item_id = item_id, rating=3.0)
 
-#engine.compute_items_by_popularity()
-#print engine.items_by_popularity
-print "Recommendations: ", engine.get_recommendations('1')
+print ("Info: compute_items_by_popularity")
+engine.compute_items_by_popularity()
+
+for i in [1, 10, 100, 1000, 10000]:
+    print ("Info: generating recommendations for a user: " + str(i))
+    engine.get_recommendations(str(i))
+
+print ("Serialization")
+db.serialize(filepath="database.bin")
+
+print ("Restore")
+db.restore(filepath="database.bin")
 
 print "End"
 
