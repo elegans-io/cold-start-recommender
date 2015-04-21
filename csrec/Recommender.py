@@ -185,8 +185,7 @@ class Recommender(Singleton):
 
         self.cooccurrence_updated = time()
 
-
-    def     compute_items_by_popularity(self, max_items=10, fast=False):
+    def compute_items_by_popularity(self, max_items=10, fast=False):
         """
         As per name, get self.
         :return: list of popular items, 0=most popular
