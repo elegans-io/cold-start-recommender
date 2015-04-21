@@ -37,8 +37,6 @@ class Recommender(Singleton):
         self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
         self.item_info = [] #any information given with item, e.g. ['author', 'category', 'subcategory']
         self.only_info = False #not used yet
-
-        #old attributes
         self.max_rating = max_rating
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self._categories_cooccurrence = {} # cooccurrence of categories
@@ -77,7 +75,7 @@ class Recommender(Singleton):
         :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
         :param item: is either id or a dict with item_id_key
         :param rating: float parseable
-        :return: [recommended item_id_values]
+        :return: None
         """
         if not return_value: #do nothing if the insert fail
             return
