@@ -35,14 +35,13 @@ class Recommender(Singleton):
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self.cooccurrence_updated = 0.0
         self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
+        self.item_info = [] #any information given with item, e.g. ['author', 'category', 'subcategory']
+        self.only_info = False #not used yet
 
         #old attributes
         self.max_rating = max_rating
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self._categories_cooccurrence = {} # cooccurrence of categories
-
-        self.item_ratings = defaultdict(dict)  # matrix of ratings for a item (inmemory testing)
-        self.user_ratings = defaultdict(dict)  # matrix of ratings for a user (inmemory testing)
 
         # categories --same as above, but separated as they are not always available
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
@@ -53,31 +52,97 @@ class Recommender(Singleton):
         self.items_by_popularity_updated = 0.0  # Time of update
 
     def on_insert_or_update_item(self, item_id, attributes, return_value):
-        print "on_insert_or_update_item"
+        #TODO: to implement
         pass
 
     def on_remove_item(self, item_id):
-        print "on_remove_item"
+        #TODO: to implement
         pass
 
     def on_insert_or_update_item_rating(self, user_id, item_id, rating=3.0, return_value=None):
-        print "on_insert_or_update_item_rating"
-        pass
+        """
+        item is treated as item_id if it is not a dict, otherwise we look
+        for a key called item_id_key if it is a dict.
+
+        self.item_info can be any further information given with the dict item.
+        e.g. author, category etc
+
+        NB NO DOTS IN user_id, or they will taken away. Fields in mongodb cannot have dots..
+
+        If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
+         This is necessary when we have for instance a "segmentation page" where we propose
+         well known items to get to know the user. If s/he select "Harry Potter" we only want
+         to retrieve the info that s/he likes JK Rowling, narrative, magic etc
+
+        :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
+        :param item: is either id or a dict with item_id_key
+        :param rating: float parseable
+        :return: [recommended item_id_values]
+        """
+        if not return_value: #do nothing if the insert fail
+            return
+
+        if not self.item_info:
+            self.item_info = []
+        # If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
+        # This is necessary when we have for instance a "segmentation page" where we propose
+        # well known items to get to know the user. If s/he select "Harry Potter" we only want
+        # to retrieve the info that s/he likes JK Rowling, narrative, magic etc
+
+        # Now fill the dicts or the Mongodb collections if available
+        user_id = str(user_id).replace('.', '')
+
+        item = self.db.get_item(item_id)
+        if item:
+            # Do categories only if the item is stored
+            if len(self.item_info) > 0:
+                for k,v in item.items():
+                    if k in self.item_info:
+                        # Some items' attributes are lists (e.g. tags: [])
+                        # or, worse, string which can represent lists...
+                        try:
+                            v = json.loads(v.replace("'", '"'))
+                        except:
+                            pass
+
+                        if not hasattr(v, '__iter__'):
+                            values = [v]
+                        else:
+                            values = v
+                        self.info_used.add(k)
+                        # we cannot set the rating, because we want to keep the info
+                        # that a user has read N books of, say, the same author,
+                        # category etc.
+                        # We could sum all the ratings and count the a result as "big rating".
+                        # Reading N books of author A and rating them 5 would be the same as reading
+                        # 5*N books of author B and rating them 1.
+                        # Still:
+                        # 1) we don't want ratings for category to skyrocket, so we have to take the average
+                        # 2) if a user changes their idea on rating a book, it should not add up. Average
+                        #   is not perfect, but close enough. Take total number of ratings and total rating
+                        for value in values:
+                            if len(str(value)) > 0:
+                                self.tot_categories_user_ratings[k][user_id][value] += int(rating)
+                                self.n_categories_user_ratings[k][user_id][value] += 1
+                                # for the co-occurrence matrix is not necessary to do the same for item, but better do it
+                                # in case we want to compute similarities etc using categories
+                                self.tot_categories_item_ratings[k][value][user_id] += int(rating)
+                                self.n_categories_item_ratings[k][value][user_id] += 1
 
     def on_remove_item_rating(self, user_id, item_id, return_value):
-        print "on_remove_item_rating"
+        #TODO: to implement
         pass
 
     def on_reconcile_user(self, old_user_id, new_user_id, return_value):
-        print "on_reconcile_user"
+        #TODO: to implement
         pass
 
     def on_serialize(self, filepath):
-        print "on_serialize"
+        #TODO: to implement
         pass
 
     def on_restore(self, filepath):
-        print "on_restore"
+        #TODO: to implement
         pass
 
     def _create_cooccurrence(self):
@@ -131,7 +196,7 @@ class Recommender(Singleton):
         else:
             self.items_by_popularity_updated = time()
 
-        df_item = pd.DataFrame(self.item_ratings).fillna(0).astype(int).sum()
+        df_item = pd.DataFrame(self.db.get_all_item_ratings()).fillna(0).astype(int).sum()
 
         df_item.sort(ascending=False)
         pop_items = list(df_item.index)
@@ -141,81 +206,17 @@ class Recommender(Singleton):
             all_items = set(self.db.get_all_items.keys())
             self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
 
-    def insert_rating(self, user_id, item_id, rating=3, item_info=None, only_info=False):
-        """
-        item is treated as item_id if it is not a dict, otherwise we look
-        for a key called item_id_key if it is a dict.
+    def set_item_info(self, item_info):
+        self.item_info = self.info_used
 
-        item_info can be any further information given with the dict item.
-        e.g. author, category etc
+    def get_item_info(self):
+        return self.item_info
 
-        NB NO DOTS IN user_id, or they will taken away. Fields in mongodb cannot have dots..
+    def set_only_info(self, only_info):
+        self.only_info=only_info
 
-        If only_info==True, only the item_info's are put in the co-occurrence, not item_id.
-         This is necessary when we have for instance a "segmentation page" where we propose
-         well known items to get to know the user. If s/he select "Harry Potter" we only want
-         to retrieve the info that s/he likes JK Rowling, narrative, magic etc
-
-        :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
-        :param item: is either id or a dict with item_id_key
-        :param rating: float parseable
-        :param item_info: any info given with dict(item), e.g. ['author', 'category', 'subcategory']
-        :param only_info: not used yet
-        :return: [recommended item_id_values]
-        """
-        if not item_info:
-            item_info = []
-        # If only_info==True, only the item_info's are put in the co-occurrence, not item_id.
-        # This is necessary when we have for instance a "segmentation page" where we propose
-        # well known items to get to know the user. If s/he select "Harry Potter" we only want
-        # to retrieve the info that s/he likes JK Rowling, narrative, magic etc
-
-        # Now fill the dicts or the Mongodb collections if available
-        user_id = str(user_id).replace('.', '')
-
-        item = self.db.get_item(item_id)
-        if item:
-            # Do categories only if the item is stored
-            if len(item_info) > 0:
-                for k,v in item.items():
-                    if k in item_info:
-                        # Some items' attributes are lists (e.g. tags: [])
-                        # or, worse, string which can represent lists...
-                        try:
-                            v = json.loads(v.replace("'", '"'))
-                        except:
-                            pass
-
-                        if not hasattr(v, '__iter__'):
-                            values = [v]
-                        else:
-                            values = v
-                        self.info_used.add(k)
-                        # we cannot set the rating, because we want to keep the info
-                        # that a user has read N books of, say, the same author,
-                        # category etc.
-                        # We could sum all the ratings and count the a result as "big rating".
-                        # Reading N books of author A and rating them 5 would be the same as reading
-                        # 5*N books of author B and rating them 1.
-                        # Still:
-                        # 1) we don't want ratings for category to skyrocket, so we have to take the average
-                        # 2) if a user changes their idea on rating a book, it should not add up. Average
-                        #   is not perfect, but close enough. Take total number of ratings and total rating
-                        for value in values:
-                            if len(str(value)) > 0:
-                                self.tot_categories_user_ratings[k][user_id][value] += int(rating)
-                                self.n_categories_user_ratings[k][user_id][value] += 1
-                                # for the co-occurrence matrix is not necessary to do the same for item, but better do it
-                                # in case we want to compute similarities etc using categories
-                                self.tot_categories_item_ratings[k][value][user_id] += int(rating)
-                                self.n_categories_item_ratings[k][value][user_id] += 1
-
-        else:
-            self.db.insert_item(item_id, {})
-        # Do item always, at least is for categories profiling
-        if not only_info:
-            self.user_ratings[user_id][item_id] = float(rating)
-            self.item_ratings[item_id][user_id] = float(rating)
+    def get_only_info(self, only_info):
+        return self.only_info
 
     def get_recommendations(self, user_id, max_recs=50, fast=False, algorithm='item_based'):
         """
@@ -244,7 +245,7 @@ class Recommender(Singleton):
         if self.db.get_item_ratings(user_id):  # compute item-based rec only if user has rated smt
             item_based = True
             #Just take user_id for the user vector
-            df_user = pd.DataFrame(self.db.get_item_ratings(user_id)).fillna(0).astype(int)
+            df_user = pd.DataFrame(self.db.get_all_item_ratings()).fillna(0).astype(int)[[user_id]]
         info_used = self.info_used
         if len(info_used) > 0:
             for i in info_used:

@@ -16,8 +16,8 @@ db = DALFactory(name='mem', params = {}) # instantiate an in memory database
 engine = Recommender(db)
 
 # Montecarlo:
-n_books = 1000
-n_users = 1000
+n_books = 100000
+n_users = 10000
 n_purchases = 10000
 n_authors = 100
 n_publishers = 10
@@ -34,6 +34,10 @@ for b in range(0, n_books + 1):
 
 print ("Info: generation and insert of random generated preferences: %d" % (n_purchases))
 purchase = 0
+
+engine.set_item_info(['author', 'publisher'])
+engine.set_only_info(False)
+
 while(purchase < n_purchases):
     book_n = np.random.zipf(1.05)
     user_n = np.random.zipf(1.5)
@@ -43,12 +47,11 @@ while(purchase < n_purchases):
         item_id = str(book_n)
         rating = random.randrange(1, 6)
         #print 'user', user_id, 'rated', rating, 'stars item', item_id
-        engine.insert_rating(user_id=user_id, item_id=item_id, rating=3, item_info=['author', 'publisher'], only_info=False)
+        db.insert_or_update_item_rating(user_id = user_id, item_id = item_id, rating=3.0)
 
-engine.get_recommendations('1')
-
-engine.compute_items_by_popularity()
-print engine.items_by_popularity
+#engine.compute_items_by_popularity()
+#print engine.items_by_popularity
+print "Recommendations: ", engine.get_recommendations('1')
 
 print "End"
 
