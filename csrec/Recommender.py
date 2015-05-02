@@ -6,6 +6,7 @@ import logging
 import json
 from tools.Singleton import Singleton
 
+
 class Recommender(Singleton):
     """
     Cold Start Recommender
@@ -19,10 +20,10 @@ class Recommender(Singleton):
         self.logger.addHandler(ch)
         self.logger.debug("============ Logger initialized ================")
 
-        #initialization of datastore attribute
+        # initialization of datastore attribute
         self.db = db
 
-        #registering callback functions for datastore events
+        # registering callback functions for datastore events
         self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
         self.db.register(self.db.remove_item, self.on_remove_item)
         self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
@@ -66,7 +67,7 @@ class Recommender(Singleton):
         self.item_info can be any further information given with the dict item.
         e.g. author, category etc
 
-        NB NO DOTS IN user_id, or they will taken away. Fields in mongodb cannot have dots..
+        NB NO DOTS IN user_id, or they will be taken away. Fields in mongodb cannot have dots..
 
         If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
          This is necessary when we have for instance a "segmentation page" where we propose
@@ -78,24 +79,25 @@ class Recommender(Singleton):
         :param rating: float parseable
         :return: None
         """
-        if not return_value: #do nothing if the insert fail
+        if not return_value:  # do nothing if the insert fail
             return
 
         if not self.item_info:
             self.item_info = []
+
         # If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
         # This is necessary when we have for instance a "segmentation page" where we propose
         # well known items to get to know the user. If s/he select "Harry Potter" we only want
         # to retrieve the info that s/he likes JK Rowling, narrative, magic etc
 
-        # Now fill the dicts or the Mongodb collections if available
+        # Now fill the dicts or the db collections if available
         user_id = str(user_id).replace('.', '')
 
         item = self.db.get_item(item_id)
         if item:
             # Do categories only if the item is stored
             if len(self.item_info) > 0:
-                for k,v in item.items():
+                for k, v in item.items():
                     if k in self.item_info:
                         # Some items' attributes are lists (e.g. tags: [])
                         # or, worse, string which can represent lists...
@@ -112,13 +114,15 @@ class Recommender(Singleton):
                         # we cannot set the rating, because we want to keep the info
                         # that a user has read N books of, say, the same author,
                         # category etc.
-                        # We could sum all the ratings and count the a result as "big rating".
-                        # Reading N books of author A and rating them 5 would be the same as reading
-                        # 5*N books of author B and rating them 1.
-                        # Still:
-                        # 1) we don't want ratings for category to skyrocket, so we have to take the average
-                        # 2) if a user changes their idea on rating a book, it should not add up. Average
-                        #   is not perfect, but close enough. Take total number of ratings and total rating
+                        # We could, but won't, sum all the ratings and count the a result as "big rating".
+                        # We won't because reading N books of author A and rating them 5 would be the same
+                        # as reading 5*N books of author B and rating them 1.
+                        # Therefore we take the average because --
+                        # 1) we don't want ratings for category to skyrocket
+                        # 2) if a user changes their idea on rating a book, it should not add up.
+                        # Average is not perfect, but close enough.
+                        #
+                        # Take total number of ratings and total rating:
                         for value in values:
                             if len(str(value)) > 0:
                                 self.tot_categories_user_ratings[k][user_id][value] += int(rating)
@@ -155,21 +159,19 @@ class Recommender(Singleton):
             for item_id, rating in ratings.items():
                 self.on_insert_or_update_item_rating(user_id=user_id, item_id=item_id, rating=rating, return_value=True)
 
-
     def _create_cooccurrence(self):
         """
         Create or update the co-occurrence matrix
         :return:
         """
         all_ratings = self.db.get_all_item_ratings()
-        df = pd.DataFrame(all_ratings).fillna(0).astype(int) #convert dictionary to pandas dataframe
+        df = pd.DataFrame(all_ratings).fillna(0).astype(int)  # convert dictionary to pandas dataframe
 
         #calculate co-occurrence matrix
         # sometime will print the warning: "RuntimeWarning: invalid value encountered in true_divide"
         # use np.seterr(divide='ignore', invalid='ignore') to suppress this warning
         df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix and normalize to 1
         co_occurrence = df_items.fillna(0).dot(df_items.T)
-        #np.fill_diagonal(co_occurrence.values, 0) # set diagonal to 0, not needed
         self._items_cooccurrence = co_occurrence
 
         #update co-occurrence matrix for items categories

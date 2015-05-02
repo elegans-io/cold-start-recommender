@@ -11,20 +11,21 @@ import DAL
 from Observable import observable
 from tools.Singleton import Singleton
 
+
 class Database(DAL.DALBase, Singleton):
     def __init__(self):
         DAL.DALBase.__init__(self)
 
-        self.__params_dictionary = { }  # abstraction layer initialization parameters
-        self.items_tbl = None # table with items
-        self.users_ratings_tbl = None # table with users rating
-        self.users_recomm_tbl = None # table with recommendations
+        self.__params_dictionary = {}  # abstraction layer initialization parameters
+        self.items_tbl = None  # table with items
+        self.users_ratings_tbl = None  # table with users rating
+        self.users_recomm_tbl = None  # table with recommendations
 
-    def init(self, params = {}):
+    def init(self, params={}):
         self.__params_dictionary.update(params)
         rValue = True
 
-        if rValue :
+        if rValue:
             try:
                 self.items_tbl = {}
                 self.users_recomm_tbl = {}
@@ -49,7 +50,7 @@ class Database(DAL.DALBase, Singleton):
         self.users_recomm_tbl[user_id] = recommendations
         return True
 
-    def remove_recomms(self, item_id):
+    def remove_recomms(self, user_id):
         """
         remove an item from datastore
 
@@ -153,7 +154,7 @@ class Database(DAL.DALBase, Singleton):
     @observable
     def insert_or_update_item_rating(self, user_id, item_id, rating=3.0):
         """
-        insert a new item rating on datastore, for each user a list of ratings will be mantained:
+        insert a new item rating on datastore, for each user a list of ratings will be stored:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -163,7 +164,7 @@ class Database(DAL.DALBase, Singleton):
         :param rating: the rating, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
-        if(self.users_ratings_tbl.has_key(user_id)):
+        if user_id in self.users_ratings_tbl:
             self.users_ratings_tbl[user_id][item_id] = rating
         else:
             self.users_ratings_tbl[user_id] = { item_id: rating }
@@ -219,7 +220,7 @@ class Database(DAL.DALBase, Singleton):
         :return: all the ratings of the new user
         """
 
-        #load dictionaries
+        # load dictionaries
         old_usr_dictionary = {}
         try:
             old_usr_dictionary = self.users_ratings_tbl[old_user_id]
@@ -233,7 +234,7 @@ class Database(DAL.DALBase, Singleton):
         except KeyError:
             pass
 
-        #updating new entry
+        # updating new entry
         old_usr_dictionary.update(new_usr_dictionary)
         self.users_ratings_tbl[new_user_id] = old_usr_dictionary
 
@@ -294,9 +295,9 @@ class Database(DAL.DALBase, Singleton):
         # Write chunks of text data
         try:
             with open(filepath, 'wb') as f:
-                data_to_serialize = { 'items':self.items_tbl,
-                                    'item_ratings':self.users_ratings_tbl,
-                                    'user_recomms':self.users_recomm_tbl}
+                data_to_serialize = {'items': self.items_tbl,
+                                     'item_ratings': self.users_ratings_tbl,
+                                     'user_recomms': self.users_recomm_tbl}
                 pickle.dump(data_to_serialize, f)
         except:
             r_value = False
@@ -331,6 +332,7 @@ class Database(DAL.DALBase, Singleton):
 
         return r_value
 
+
 class MemDALTest(unittest.TestCase):
 
     def setUp(self):
@@ -354,7 +356,7 @@ class MemDALTest(unittest.TestCase):
 
         for i in range(0, self.item_count):
             for j in range(0, self.item_count * 10):
-                self.db.insert_or_update_item(i, {'author':j%3, 'cathegory':j%7, 'subcategory':[j%11, j%13]})
+                self.db.insert_or_update_item(i, {'author': j%3, 'category': j%7, 'subcategory': [j%11, j%13]})
 
         self.assertEquals(self.db.get_items_count(), self.item_count)
 

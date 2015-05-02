@@ -1,10 +1,10 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='cold-start-recommender',
       description='In-memory recommender for recommendations produced on-the-fly',
-      author='Mario Alemi',
-      author_email='mario.alemi@gmail.com',
-      version='0.3.15',
+      author='elegans.io',
+      author_email='elegans.io Ltd',
+      version='0.4.0',
       py_modules=['csrec.Recommender', 'tools.Singleton'],
       url='https://github.com/elegans-io/cold-start-recommender',
       license='LICENSE.txt',

@@ -13,8 +13,9 @@ Start a webapp for testing the recommender.
 
 """
 
-db = DALFactory(name='mem', params = {}) # instantiate an in memory database
+db = DALFactory(name='mem', params={})  # instantiate an in memory database
 engine = Recommender(db)
+
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
