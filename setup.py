@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='cold-start-recommender',
       description='In-memory recommender for recommendations produced on-the-fly',
