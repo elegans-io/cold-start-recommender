@@ -1,10 +1,16 @@
+v 4.0
+
+* Introduced the Data Abstraction Layer
+* It's now fully in memory, with the possibility to dump everything to a DB or file
+* Different instances can run
+
 v 3.12
 
 * Bug fixed
 
 v 3.11
 
-* Some debugs messsages added
+* Some debugs messages added
 
 v 3.10
 
