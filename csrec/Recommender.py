@@ -165,6 +165,8 @@ class Recommender(Singleton):
         df = pd.DataFrame(all_ratings).fillna(0).astype(int) #convert dictionary to pandas dataframe
 
         #calculate co-occurrence matrix
+        # sometime will print the warning: "RuntimeWarning: invalid value encountered in true_divide"
+        # use np.seterr(divide='ignore', invalid='ignore') to suppress this warning
         df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix and normalize to 1
         co_occurrence = df_items.fillna(0).dot(df_items.T)
         #np.fill_diagonal(co_occurrence.values, 0) # set diagonal to 0, not needed
@@ -195,8 +197,7 @@ class Recommender(Singleton):
         else:
             self.items_by_popularity_updated = time()
 
-        df_item = pd.DataFrame(self.db.get_all_item_ratings()).fillna(0).astype(int).sum()
-
+        df_item = pd.DataFrame(self.db.get_all_item_ratings()).T.fillna(0).astype(int).sum()
         df_item.sort(ascending=False)
         pop_items = list(df_item.index)
         if len(pop_items) >= max_items:
