@@ -251,6 +251,17 @@ class DALBase(Observable):
 
     @abc.abstractmethod
     @observable
+    def reset(self):
+        """
+        reset the datastore
+
+        :return: True if the operation was successfully executed, otherwise return False
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    @observable
     def serialize(self, filepath):
         """
         dump the datastore on file

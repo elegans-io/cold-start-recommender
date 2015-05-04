@@ -17,7 +17,7 @@ def observable(function):
         try:
             observers = called_class.observers[wrapped_function_name]
         except KeyError:
-            return False
+            pass
         else:
             for o in observers:
                 kwargs['return_value'] = return_value

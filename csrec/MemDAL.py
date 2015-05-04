@@ -11,7 +11,6 @@ import DAL
 from Observable import observable
 from tools.Singleton import Singleton
 
-
 class Database(DAL.DALBase, Singleton):
     def __init__(self):
         DAL.DALBase.__init__(self)
@@ -22,6 +21,12 @@ class Database(DAL.DALBase, Singleton):
         self.users_recomm_tbl = None  # table with recommendations
 
     def init(self, params={}):
+        """
+        initialization method
+
+        :param params: dictionary of parameters
+        :return: True if the class was successfully initialized, otherwise return False
+        """
         self.__params_dictionary.update(params)
         rValue = True
 
@@ -204,10 +209,10 @@ class Database(DAL.DALBase, Singleton):
         :return: the ratings of a user, if the user does not exists returns an empty dictionary
         """
         try:
-            recomm = self.users_ratings_tbl[user_id]
+            ratings = self.users_ratings_tbl[user_id]
         except KeyError:
-            recomm = {}
-        return recomm
+            ratings = {}
+        return ratings
 
     @observable
     def reconcile_user(self, old_user_id, new_user_id):
@@ -283,6 +288,17 @@ class Database(DAL.DALBase, Singleton):
         """
         return self.items_tbl.iteritems()
 
+    @observable
+    def reset(self):
+        """
+        reset the datastore
+
+        :return: True if the operation was successfully executed, otherwise return False
+        """
+        self.items_tbl = {}
+        self.users_ratings_tbl = {}
+        self.users_recomm_tbl = {}
+        return True
 
     @observable
     def serialize(self, filepath):
