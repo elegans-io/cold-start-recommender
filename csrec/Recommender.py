@@ -336,12 +336,10 @@ class Recommender(Singleton):
 
         if item_based:
             # If the user has rated all items, return an empty list
-            print "AAA0"
             rated = df_user[user_id] != 0
 #            self.logger.debug("Rated: %s", rated)
             return [i for i in global_rec.index if not rated.get(i, False)][:max_recs]
         else:
-            print "AAA1"
             try:
                 recomms = list(global_rec.index)[:max_recs]
             except:
