@@ -243,7 +243,6 @@ class Recommender(Singleton):
         item_based = False  # has user rated some items?
         info_based = []  # user has rated the category (e.g. the category "author" etc)
         df_user = None
-
         if self.db.get_item_ratings(user_id):  # compute item-based rec only if user has rated smt
             item_based = True
             #Just take user_id for the user vector
@@ -337,8 +336,14 @@ class Recommender(Singleton):
 
         if item_based:
             # If the user has rated all items, return an empty list
+            print "AAA0"
             rated = df_user[user_id] != 0
 #            self.logger.debug("Rated: %s", rated)
             return [i for i in global_rec.index if not rated.get(i, False)][:max_recs]
         else:
-            return list(global_rec.index)[:max_recs]
+            print "AAA1"
+            try:
+                recomms = list(global_rec.index)[:max_recs]
+            except:
+                return None
+            return recomms

@@ -38,7 +38,7 @@ class HttpRecommTaskSet(TaskSet):
     def recommend_fast(self):
         user_num = random.randint(0,10000)
         user_id = 'user_' + str(user_num)
-        response = self.client.get("/recommend", data={'user':user_num, 'max_recs':10, 'fast':True})
+        response = self.client.get("/recommend", data={'user':user_id, 'max_recs':10, 'fast':True})
 
     @task(20)
     def recommend_slow(self):
