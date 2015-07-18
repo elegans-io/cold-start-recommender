@@ -1,5 +1,5 @@
-__author__ = "Angelo Leto"
-__email__ = "angelo.leto@elegans.io"
+__author__ = "elegans.io Ltd"
+__email__ = "info@elegans.io"
 
 __base_error_code__ = 110
 

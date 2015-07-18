@@ -1,5 +1,6 @@
-__author__ = "Angelo Leto"
-__email__ = "angelo.leto@elegans.io"
+__author__ = "elegans.io Ltd"
+__email__ = "info@elegans.io"
+
 
 __base_error_code__ = 110
 
@@ -10,6 +11,7 @@ import pickle # serialization library
 import DAL
 from Observable import observable
 from tools.Singleton import Singleton
+
 
 class Database(DAL.DALBase, Singleton):
     def __init__(self):

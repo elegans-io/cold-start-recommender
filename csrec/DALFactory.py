@@ -1,5 +1,5 @@
-__author__ = "Angelo Leto"
-__email__ = "angleto@gmail.com"
+__author__ = "elegans.io Ltd"
+__email__ = "info@elegans.io"
 
 # database abstraction layer factory
 def DALFactory(name='mem', params = {}):
