@@ -1,7 +1,8 @@
-__author__ = "Angelo Leto"
-__email__ = "angelo.leto@elegans.io"
+__author__ = "elegans.io Ltd"
+__email__ = "info@elegans.io"
 
 import abc
+
 
 def observable(function):
     """
@@ -10,6 +11,7 @@ def observable(function):
     :return:
     """
     wrapped_function_name = function.__name__
+
     def newf(*args, **kwargs):
         return_value = function(*args, **kwargs)
         called_class = args[0]
@@ -26,6 +28,7 @@ def observable(function):
     newf.__name__ = wrapped_function_name
     return newf
 
+
 class Observable(object):
     __metaclass__ = abc.ABCMeta
 
@@ -35,17 +38,18 @@ class Observable(object):
     def register(self, function, observer):
         """
         register an observer to a specific event
-        :param observer:
-        :param event:
+
+        :param function: the function to observe
+        :param observer: the observer function
         :return:
         """
         event = function.__name__
-        if not self.observers.has_key(event):
+        if event not in self.observers:
             self.observers[event] = {}
 
         try:
             self.observers[event][observer] = 1
-        except KeyError :
+        except KeyError:
             op = False
         else:
             op = True

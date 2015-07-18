@@ -7,7 +7,7 @@ __base_error_code__ = 110
 import unittest
 
 import sys
-import pickle # serialization library
+import pickle  # serialization library
 import DAL
 from Observable import observable
 from tools.Singleton import Singleton
@@ -22,26 +22,29 @@ class Database(DAL.DALBase, Singleton):
         self.users_ratings_tbl = None  # table with users rating
         self.users_recomm_tbl = None  # table with recommendations
 
-    def init(self, params={}):
+    def init(self, params=None):
         """
         initialization method
 
         :param params: dictionary of parameters
         :return: True if the class was successfully initialized, otherwise return False
         """
-        self.__params_dictionary.update(params)
-        rValue = True
+        if not params:
+            params = {}
 
-        if rValue:
+        self.__params_dictionary.update(params)
+        return_value = True
+
+        if return_value:
             try:
                 self.items_tbl = {}
                 self.users_recomm_tbl = {}
                 self.users_ratings_tbl = {}
             except:
-                print >> sys.stderr, ("Error: unable to initialize tables: %d" % (__base_error_code__))
-                rValue = False
+                print >> sys.stderr, ("Error: unable to initialize tables: %d" % __base_error_code__)
+                return_value = False
 
-        return rValue
+        return return_value
 
     def insert_or_update_recomms(self, user_id, recommendations):
         """
@@ -174,7 +177,7 @@ class Database(DAL.DALBase, Singleton):
         if user_id in self.users_ratings_tbl:
             self.users_ratings_tbl[user_id][item_id] = rating
         else:
-            self.users_ratings_tbl[user_id] = { item_id: rating }
+            self.users_ratings_tbl[user_id] = {item_id: rating}
         return True
 
     @observable
@@ -333,7 +336,7 @@ class Database(DAL.DALBase, Singleton):
         r_value = True
         # Write chunks of text data
 
-        #reset existing data
+        # reset existing data
         self.items_tbl = {}
         self.users_recomm_tbl = {}
         self.users_ratings_tbl = {}
@@ -343,7 +346,7 @@ class Database(DAL.DALBase, Singleton):
                 data_from_file = pickle.load(f)
                 self.items_tbl = data_from_file['items']
                 self.users_ratings_tbl = data_from_file['item_ratings']
-                self.users_recomm_tbl =  data_from_file['user_recomms']
+                self.users_recomm_tbl = data_from_file['user_recomms']
         except:
             r_value = False
             print >> sys.stderr, ("Error: unable to load data from file: %d" % (__base_error_code__ + 2))
@@ -374,12 +377,12 @@ class MemDALTest(unittest.TestCase):
 
         for i in range(0, self.item_count):
             for j in range(0, self.item_count * 10):
-                self.db.insert_or_update_item(i, {'author': j%3, 'category': j%7, 'subcategory': [j%11, j%13]})
+                self.db.insert_or_update_item(i, {'author': j % 3, 'category': j % 7, 'subcategory': [j % 11, j % 13]})
 
         self.assertEquals(self.db.get_items_count(), self.item_count)
 
         for u in range(0, self.user_count):
-            self.db.insert_or_update_item_rating(user_id=u, item_id=self.item_count % max(u,1), rating=u % 5)
+            self.db.insert_or_update_item_rating(user_id=u, item_id=self.item_count % max(u, 1), rating=u % 5)
 
         self.assertEquals(self.db.get_user_count(), self.user_count)
 
@@ -404,10 +407,10 @@ class MemDALTest(unittest.TestCase):
         for u in range(0, self.user_count, 2):
             self.db.reconcile_user(u, u+1)
         iter = self.db.get_item_ratings_iterator()
-        for k,v in iter:
+        for k, v in iter:
             for r in v:
                 merged_ratings += 1
-        self.assertEquals( merged_ratings, self.item_count )
+        self.assertEquals(merged_ratings, self.item_count)
 
 if __name__ == '__main__':
     unittest.main()

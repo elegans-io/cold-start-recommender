@@ -2,7 +2,9 @@ __author__ = "elegans.io Ltd"
 __email__ = "info@elegans.io"
 
 # database abstraction layer factory
-def DALFactory(name='mem', params = {}):
+
+
+def DALFactory(name='mem', params={}):
     if name == 'mem':
         import MemDAL
         dal = MemDAL.Database()

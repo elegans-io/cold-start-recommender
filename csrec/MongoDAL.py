@@ -8,11 +8,11 @@ import unittest
 import sys
 import DAL
 from Observable import observable
-#from tools.Singleton import Singleton
+
 
 from pymongo import MongoClient
 
-#class Database(DAL.DALBase, Singleton):
+
 class Database(DAL.DALBase):
     def __init__(self):
         DAL.DALBase.__init__(self)
@@ -27,18 +27,21 @@ class Database(DAL.DALBase):
         self.mongo_replica_set = None
 
         self.parameters_variables = {
-            'host' : self.mongo_host,
-            'dbname' : self.mongo_db_name,
-            'replicaset' : self.mongo_replica_set
+            'host': self.mongo_host,
+            'dbname': self.mongo_db_name,
+            'replicaset': self.mongo_replica_set
         }
 
-    def init(self, params={}):
+    def init(self, params=None):
         """
         initialization method
 
         :param params: dictionary of parameters
         :return: True if the class was successfully initialized, otherwise return False
         """
+        if not params:
+            params = {}
+
         self.__params_dictionary.update(params)
 
         for k in params:
@@ -213,7 +216,7 @@ class Database(DAL.DALBase):
         :param rating: the rating, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
-        item = { str(item_id) : rating }
+        item = {str(item_id): rating}
         try:
             self._db['users_ratings_tbl'].update({"_id": str(user_id)}, {"$set": item}, upsert=True)
         except:
@@ -232,7 +235,7 @@ class Database(DAL.DALBase):
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
         """
         try:
-            self._db['users_ratings_tbl'].update({"_id": user_id}, {"$unset": {item_id:""}})
+            self._db['users_ratings_tbl'].update({"_id": user_id}, {"$unset": {item_id: ""}})
         except:
             print >> sys.stderr, ("Error: failed removing item rating")
             return False
@@ -365,7 +368,7 @@ class Database(DAL.DALBase):
         for i in iter:
             key = i['_id']
             del i['_id']
-            print (key, i)
+            print(key, i)
 
     def get_items_iterator(self):
         """
@@ -383,7 +386,7 @@ class Database(DAL.DALBase):
         for i in iter:
             key = i['_id']
             del i['_id']
-            print (key, i)
+            print(key, i)
 
     @observable
     def reset(self):
@@ -420,6 +423,7 @@ class Database(DAL.DALBase):
         r_value = False
         return r_value
 
+
 class MongoDALTest(unittest.TestCase):
 
     def setUp(self):
@@ -443,11 +447,12 @@ class MongoDALTest(unittest.TestCase):
 
         for i in range(0, self.item_count):
             for j in range(0, self.item_count * 1):
-                r = self.db.insert_or_update_item(i, {'author': j%3, 'category': j%7, 'subcategory': [j%11, j%13]})
+                r = self.db.insert_or_update_item(i, {'author': j % 3, 'category': j % 7,
+                                                      'subcategory': [j % 11, j % 13]})
                 self.assertEquals(r, True)
 
         for u in range(0, self.user_count):
-            r = self.db.insert_or_update_item_rating(user_id=u, item_id=self.item_count % max(u,1), rating=u % 5)
+            r = self.db.insert_or_update_item_rating(user_id=u, item_id=self.item_count % max(u, 1), rating=u % 5)
             self.assertEquals(r, True)
 
     def test_user_reconcile(self):
