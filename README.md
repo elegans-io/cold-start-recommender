@@ -26,9 +26,7 @@ pilots, where statistics are so low that filters (e.g. loglikelihood
 filter on the co-occurence matrix) are premature. It aims to
 *gather data* in order to immediately personalise the user experience.
 
-TODO Future releases will include state of the art algorithms (availability planned for
-October 2014, a few months before our product goes
-public).
+TODO Future releases will include state of the art algorithms
 
 CSRec is written in Python, and under the hood it uses the `Pandas`_
 library. 
@@ -44,7 +42,7 @@ library.
 A simple script
 ---------------
 
-    from csrec.Recommender import Recommender
+    from csrec import Recommender
     
     engine = Recommender()
 
@@ -95,14 +93,22 @@ memory, and two other secondaries on disk. If the primary goes down,
 you still can use CSRec at lower performances, but without any data
 loss.)
 
-Examples:
+Examples
+--------
 
-	engine = Recommender()  # Start in-memory recommender for testing
-	
-	engine = Recommender(mongo_host='localhost', mongo_db_name='my_cold_rec')  # ...with MongoDB, collections are created automatically
-	
-	engine = Recommender(mongo_host='localhost', mongo_db_name='my_cold_rec', mongo_replica_set='recommender_replica')  # as above, with replica
-	
+In memory:
+    db = DALFactory(name='mem', params={})  # instantiate an in memory database	engine = Recommender()
+	engine = Recommender(db=db)
+
+Using Mongo:
+
+    params = {
+            'host': 'localhost',
+            'dbname': 'csrec',
+            'replicaset': None
+        }
+    db = DALFactory(name='mongo', params=params)
+	engine = Recommender(db=db)  # ...with MongoDB, collections are created automatically
 
 The Cold Start Problem
 ----------------------
