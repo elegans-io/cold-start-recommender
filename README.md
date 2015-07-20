@@ -118,10 +118,11 @@ if Users who liked item 'A' also liked item 'B', the recommender would
 recommend 'B' to a user who just liked 'A'. But if you have no
 previous rating by any User, you cannot make any recommendations.
 
-CSRec tackles the issue in various ways:
+CSRec tackles the issue in various ways.
 
-1. It allows profiling with well-known Items without biasing the
-results. For instance, if a call to insert_rating is done in this way:
+It allows **profiling with well-known Items without biasing the results**.
+
+For instance, if a call to insert_rating is done in this way:
 
    engine.insert_rating(user_id='another_user', item_id='an_item', rating=3, item_info=['author'], only_info=True)
 
@@ -138,14 +139,14 @@ co-occurence matrix is often too sparse to compute decent
 recommendations. In this way you start building multiple, denser,
 co-occurence matrices and use them from the very beginning.
 
-2. **Any information is used.** You decide which information you should
+**Any information is used.** You decide which information you should
 record about a User rating an Item. This is similar to the previous
 point, but you also register the item_id.
 
-3. **Any information is used *immediately*.** The co-occurence matrix is
+**Any information is used *immediately*.** The co-occurence matrix is
 updated as soon as a rating is inserted.
 
-4. **It tracks anonymous users,** e.g. random visitors of a website
+**It tracks anonymous users,** e.g. random visitors of a website
 before the sign in/ sign up process. After sign up/ sign in the
 information can be reconciled --information relative to the session ID
 is moved into the correspondent user ID entry.
@@ -169,18 +170,21 @@ provide recommendations in less than 200msec for a matrix of about
 Versions
 --------
 **v 4.00**
-Data Abstraction Layers for memory and mongo.
-NB Not compatible with 3.*
+
+* Data Abstraction Layers for memory and mongo.
+* NB Not compatible with 3.*
 
 **v 3.15**
-It is now a singleton, improved performance when used with, eg, Pyramid
+
+* It is now a singleton, improved performance when used with, eg, Pyramid
 
 **v 3.14**
-Minor bugs
+
+* Minor bugs
 
 **v 3.13**
 
-Added self.drop_db
+* Added self.drop_db
 
 **v 3.12**
 
@@ -205,7 +209,7 @@ Added self.drop_db
 
 **v 3.7**
 
-Bug fixing for in-memory
+* Bug fixing for in-memory
 
 **v 3.5**
 
