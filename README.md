@@ -169,6 +169,9 @@ provide recommendations in less than 200msec for a matrix of about
 
 Versions
 --------
+**v 4.00**
+Data Abstraction Layers for memory and mongo.
+NB Not compatible with 3.*
 
 **v 3.15**
 It is now a singleton, improved performance when used with, eg, Pyramid
