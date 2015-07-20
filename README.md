@@ -44,7 +44,8 @@ A simple script
 
     from csrec import Recommender
     
-    engine = Recommender()
+    db = DALFactory(name='mem')  # instantiate an in memory database
+	engine = Recommender(db=db)
 
     # Insert Item with it properties (e.g. author, category...)
     # NB lists can be passed as json-parseable strings
@@ -96,7 +97,7 @@ Examples
 
 In memory:
 
-    db = DALFactory(name='mem')  # instantiate an in memory database	engine = Recommender()
+    db = DALFactory(name='mem')  # instantiate an in memory database
 	engine = Recommender(db=db)
 
 Using Mongo:
