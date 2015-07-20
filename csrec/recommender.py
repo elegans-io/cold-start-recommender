@@ -49,7 +49,7 @@ class Recommender(Singleton):
         self.items_by_popularity = []
         self.items_by_popularity_updated = 0.0  # Time of update
 
-        self.last_serialization_time = 0.0 # Time of data backup
+        self.last_serialization_time = 0.0  # Time of data backup
 
     def on_insert_or_update_item(self, item_id, attributes, return_value):
         #TODO: to implement
@@ -75,7 +75,7 @@ class Recommender(Singleton):
          to retrieve the info that s/he likes JK Rowling, narrative, magic etc
 
         :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
-        :param item: is either id or a dict with item_id_key
+        :param item_id: id of item
         :param rating: float parseable
         :return: None
         """
