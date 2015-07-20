@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import webapp2
-from csrec.Recommender import Recommender
-from csrec.DALFactory import DALFactory
+from csrec import Recommender
+from csrec import DALFactory
 import csrec
 
 """

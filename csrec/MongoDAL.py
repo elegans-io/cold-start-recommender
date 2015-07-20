@@ -6,16 +6,14 @@ __base_error_code__ = 110
 import unittest
 
 import sys
-import DAL
+from dal import DALBase
 from Observable import observable
-
-
 from pymongo import MongoClient
 
 
-class Database(DAL.DALBase):
+class Database(DALBase):
     def __init__(self):
-        DAL.DALBase.__init__(self)
+        DALBase.__init__(self)
 
         self.__params_dictionary = {}  # abstraction layer initialization parameters
 

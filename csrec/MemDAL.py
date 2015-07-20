@@ -8,14 +8,14 @@ import unittest
 
 import sys
 import pickle  # serialization library
-import DAL
+from dal import DALBase
 from Observable import observable
 from tools.Singleton import Singleton
 
 
-class Database(DAL.DALBase, Singleton):
+class Database(DALBase, Singleton):
     def __init__(self):
-        DAL.DALBase.__init__(self)
+        DALBase.__init__(self)
 
         self.__params_dictionary = {}  # abstraction layer initialization parameters
         self.items_tbl = None  # table with items
