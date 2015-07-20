@@ -4,6 +4,10 @@ import webapp2
 from csrec import Recommender
 from csrec import DALFactory
 import csrec
+import json
+import argparse
+from paste import httpserver
+
 
 """
 Usage:
@@ -30,24 +34,25 @@ class InsertRating(webapp2.RequestHandler):
     """
     def post(self):
         db.insert_or_update_item_rating(
-            user_id = self.request.get('user'),
-            item_id = self.request.get('item'),
-            rating = float(self.request.get('rating'))
+            user_id=self.request.get('user'),
+            item_id=self.request.get('item'),
+            rating=float(self.request.get('rating'))
         )
 
-class InsertItem(webapp2.RequestHandler):
+
+class UpdateItem(webapp2.RequestHandler):
     """
+    Update (or insert) item. The unique_id must be given as param
     e.g.:
-    curl -X POST  'localhost:8081/insertitem?id=Book1&author=TheAuthor&cathegory=Horror&tags=scary,terror'
+    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, { "_id" : "124", "type": "male", "category" : "hardcore"}]' http://localhost:8081/update/items?unique_id=_id
     """
     def post(self):
-        item_fields = {}
-        for i in self.request.params.items():
-            item_fields[i[0]] = i[1]
+        items = json.loads(self.request.body)
+        item_id = self.request.params['unique_id']
+        for i in items:
+            print "UpdateItem: inserting", i
+            db.insert_or_update_item(item_id=item_id, attributes=i)
 
-        item_id = item_fields['id']
-        del item_fields['id']
-        db.insert_or_update_item(item_id = item_id, attributes = item_fields)
 
 class GetItems(webapp2.RequestHandler):
     """
@@ -57,6 +62,7 @@ class GetItems(webapp2.RequestHandler):
         item_id = self.request.get('id')
         item_record = db.get_item(item_id = item_id)
         self.response.write(item_record)
+
 
 class Recommend(webapp2.RequestHandler):
     """
@@ -75,9 +81,10 @@ class Reconcile(webapp2.RequestHandler):
         old_user_id = self.request.get('old')
         new_user_id = self.request.get('new')
         db.reconcile_user(
-            old_user_id = old_user_id,
-            new_user_id = new_user_id
+            old_user_id=old_user_id,
+            new_user_id=new_user_id
         )
+
 
 class Info(webapp2.RequestHandler):
     """
@@ -91,8 +98,8 @@ class Info(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/insertrating', InsertRating),
-    ('/insertitem', InsertItem),
+    ('/insert/rating', InsertRating),
+    ('/update/items', UpdateItem),
     ('/items', GetItems),
     ('/recommend', Recommend),
     ('/reconcile', Reconcile),
@@ -101,8 +108,12 @@ app = webapp2.WSGIApplication([
 
 
 def main():
-    from paste import httpserver
-    httpserver.serve(app, host='127.0.0.1', port='8081', use_threadpool=True, threadpool_workers=10)
+    parser = argparse.ArgumentParser(description="Launch a webapp with the recommender")
+    parser.add_argument('-p', '--port', type=str, default='8081')
+    #TODO parser.add_argument('-d', '--db', type=str, default='mem')
+    parser.parse_args()
+    args = parser.parse_args()
+    httpserver.serve(app, host='127.0.0.1', port=args.port, use_threadpool=True, threadpool_workers=10)
 
 if __name__ == '__main__':
     main()
