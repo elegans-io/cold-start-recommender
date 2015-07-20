@@ -73,7 +73,11 @@ The following python packages are needed in order to run the recommender:
 #pandas
 #numpy
 
+If you want to run the webservice then you also need:
 
+#webapp2
+#webob
+#paste
 
 Features
 ========
