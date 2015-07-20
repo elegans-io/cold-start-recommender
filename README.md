@@ -64,18 +64,16 @@ Dependencies
 
 The following python packages are needed in order to run the recommender:
 
-#unittest
-#abc
-#pickle
-#math
-#pandas
-#numpy
+* unittest
+* pickle
+* pandas
+* numpy
 
 If you want to run the webservice then you also need:
 
-#webapp2
-#webob
-#paste
+* webapp2
+* webob
+* paste
 
 Features
 ========
