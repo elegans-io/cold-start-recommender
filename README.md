@@ -96,7 +96,7 @@ Examples
 
 In memory:
 
-    db = DALFactory(name='mem', params={})  # instantiate an in memory database	engine = Recommender()
+    db = DALFactory(name='mem')  # instantiate an in memory database	engine = Recommender()
 	engine = Recommender(db=db)
 
 Using Mongo:
