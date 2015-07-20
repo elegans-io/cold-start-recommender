@@ -16,7 +16,6 @@ class DALBase(Observable):
     def init(self, params = {}):
         """
         initialization method
-
         :param params: dictionary of parameters
         :return: True if the class was successfully initialized, otherwise return False
         """
@@ -27,7 +26,6 @@ class DALBase(Observable):
     def insert_or_update_recomms(self, user_id, recommendations):
         """
         insert a new recommendation for a user
-
         :param user_id: user id
         :param recommendations: the recommendations for the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -42,7 +40,6 @@ class DALBase(Observable):
     def remove_recomms(self, item_id):
         """
         remove an item from datastore
-
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
         """
@@ -53,7 +50,6 @@ class DALBase(Observable):
     def reset_recomms(self):
         """
         remove all recommendations from datastore
-
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
         """
@@ -65,7 +61,6 @@ class DALBase(Observable):
         """
         retrieve the list of recommendations for the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
-
         :param user_id: user id
         :return: the recommendations for a user, if the user does not exists returns an empty dictionary
         """
@@ -77,7 +72,6 @@ class DALBase(Observable):
     def insert_or_update_item(self, item_id, attributes):
         """
         insert a new item on datastore
-
         :param item_id: item id
         :param attributes: a dictionary with item attributes e.g.
             {"author": "AA. VV.",
@@ -95,7 +89,6 @@ class DALBase(Observable):
     def remove_item(self, item_id):
         """
         remove an item from datastore
-
         :param item_id: item id
         :return:
         """
@@ -117,7 +110,6 @@ class DALBase(Observable):
                 "subcategory":["splatter", "zombies"],
                 ...
             }
-
         :return: a dictionary with ratings
         """
         #TODO: implement me
@@ -146,7 +138,6 @@ class DALBase(Observable):
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
-
         :param user_id: user id
         :param item_id: item id
         :param rating: the rating, default value is 3.0
@@ -160,7 +151,6 @@ class DALBase(Observable):
     def remove_item_rating(self, user_id, item_id):
         """
         remove an item rating from datastore
-
         :param user_id: user id
         :param item_id: item id
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
@@ -185,7 +175,6 @@ class DALBase(Observable):
         """
         retrieve the list of ratings made by the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
-
         :param user_id: user id
         :return: the ratings of a user, if the user does not exists returns an empty dictionary
         """
@@ -198,7 +187,6 @@ class DALBase(Observable):
         """
         merge two users under the new user id, old user id will be removed
         for each item rated more than once, those rated by new_user_id will be kept
-
         :param old_user_id: old user id
         :param new_user_id: new user id
         :return: all the ratings of the user
@@ -210,7 +198,6 @@ class DALBase(Observable):
     def get_user_count(self):
         """
         count the number of users present in ratings table
-
         :return: the number of users
         """
         #TODO: implement me
@@ -220,7 +207,6 @@ class DALBase(Observable):
     def get_items_count(self):
         """
         count items
-
         :return: the number of items
         """
         #TODO: implement me
@@ -233,7 +219,6 @@ class DALBase(Observable):
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
-
         :return: an iterator on users ratings
         """
         #TODO: implement me
@@ -243,7 +228,6 @@ class DALBase(Observable):
     def get_items_iterator(self):
         """
         return an iterator on items
-
         :return: an iterator on items
         """
         #TODO: implement me
@@ -254,7 +238,6 @@ class DALBase(Observable):
     def reset(self):
         """
         reset the datastore
-
         :return: True if the operation was successfully executed, otherwise return False
         """
         #TODO: implement me
@@ -265,7 +248,6 @@ class DALBase(Observable):
     def serialize(self, filepath):
         """
         dump the datastore on file
-
         :return: True if the operation was successfully executed, otherwise return False
         """
         #TODO: implement me
@@ -276,9 +258,7 @@ class DALBase(Observable):
     def restore(self, filepath):
         """
         restore the datastore from file
-
         :return: True if the operation was successfully executed, otherwise return False
         """
         #TODO: implement me
         return
-
