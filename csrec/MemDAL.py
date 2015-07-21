@@ -21,6 +21,7 @@ class Database(DALBase, Singleton):
         self.items_tbl = None  # table with items
         self.users_ratings_tbl = None  # table with users rating
         self.users_recomm_tbl = None  # table with recommendations
+        self.users_social_tbl = None  # table with action user-user
 
     def init(self, params=None):
         """
@@ -35,14 +36,14 @@ class Database(DALBase, Singleton):
         self.__params_dictionary.update(params)
         return_value = True
 
-        if return_value:
-            try:
-                self.items_tbl = {}
-                self.users_recomm_tbl = {}
-                self.users_ratings_tbl = {}
-            except:
-                print >> sys.stderr, ("Error: unable to initialize tables: %d" % __base_error_code__)
-                return_value = False
+        try:
+            self.items_tbl = {}
+            self.users_recomm_tbl = {}
+            self.users_ratings_tbl = {}
+            self.users_social_tbl = {}
+        except:
+            print >> sys.stderr, ("Error: unable to initialize tables: %d" % __base_error_code__)
+            return_value = False
 
         return return_value
 
@@ -162,6 +163,21 @@ class Database(DALBase, Singleton):
         return item
 
     @observable
+    def insert_or_update_social(self, user_id, user_id_to, rating):
+        """
+
+        :param user_id_from:
+        :param user_id_to:
+        :param rating:
+        :return:
+        """
+        if user_id in self.users_social_tbl:
+            self.users_social_tbl[user_id][user_id_to] = rating
+        else:
+            self.users_social_tbl[user_id] = {user_id_to: rating}
+        return True
+
+    @observable
     def insert_or_update_item_rating(self, user_id, item_id, rating=3.0):
         """
         insert a new item rating on datastore, for each user a list of ratings will be stored:
@@ -191,6 +207,21 @@ class Database(DALBase, Singleton):
         """
         try:
             del self.users_ratings_tbl[user_id][item_id]
+        except KeyError:
+            return False
+        return True
+
+    @observable
+    def remove_social(self, user_id, user_id_to):
+        """
+        remove an item rating from datastore
+
+        :param user_id: user id
+        :param user_id_to: user id
+        :return: True if the operation was successfully executed or it does not exists, otherwise return False
+        """
+        try:
+            del self.users_social_tbl[user_id][user_id_to]
         except KeyError:
             return False
         return True
@@ -225,6 +256,8 @@ class Database(DALBase, Singleton):
         merge two users under the new user id, old user id will be removed
         for each item rated more than once, those rated by new_user_id will be kept
 
+        Also, update the social table (user A -> user B)
+
         :param old_user_id: old user id
         :param new_user_id: new user id
         :return: all the ratings of the new user
@@ -248,7 +281,24 @@ class Database(DALBase, Singleton):
         old_usr_dictionary.update(new_usr_dictionary)
         self.users_ratings_tbl[new_user_id] = old_usr_dictionary
 
-        return self.users_ratings_tbl[new_user_id]
+        # updating the social stuff
+        old_social_dict = {}
+        try:
+            old_social_dict = self.users_social_tbl[old_user_id]
+            del self.users_social_tbl[old_user_id]
+        except KeyError:
+            pass
+
+        new_social_dict = {}
+        try:
+            new_social_dict = self.users_social_tbl[new_user_id]
+        except KeyError:
+            pass
+
+        old_social_dict.update(new_social_dict)
+        self.users_social_tbl[new_user_id] = old_social_dict
+
+        return True
 
     def get_user_count(self):
         """
@@ -274,6 +324,19 @@ class Database(DALBase, Singleton):
             tot_items = 0
         return tot_items
 
+    def get_social_count(self):
+        """
+        count social
+        :return: number of social actions
+        """
+        tot_social = 0
+        try:
+            for user in self.users_social_tbl:
+                tot_social += len(self.users_social_tbl.get(user, {}).keys())
+        except:
+            tot_social = 0
+        return tot_social
+
     def get_item_ratings_iterator(self):
         """
         return an iterator on item ratings for each user:
@@ -293,6 +356,14 @@ class Database(DALBase, Singleton):
         """
         return self.items_tbl.iteritems()
 
+    def get_social_iterator(self):
+        """
+        {user: {user: rating, user:rating, ...}}
+        :return: iterator on user's social activity
+        """
+        for user in self.users_social_tbl:
+            yield {user: self.users_social_tbl[user]}
+
     @observable
     def reset(self):
         """
@@ -303,6 +374,7 @@ class Database(DALBase, Singleton):
         self.items_tbl = {}
         self.users_ratings_tbl = {}
         self.users_recomm_tbl = {}
+        self.users_social_tbl = {}
         return True
 
     @observable
@@ -318,7 +390,8 @@ class Database(DALBase, Singleton):
             with open(filepath, 'wb') as f:
                 data_to_serialize = {'items': self.items_tbl,
                                      'item_ratings': self.users_ratings_tbl,
-                                     'user_recomms': self.users_recomm_tbl}
+                                     'user_recomms': self.users_recomm_tbl,
+                                     'user_social': self.users_social_tbl}
                 pickle.dump(data_to_serialize, f)
         except:
             r_value = False
@@ -340,6 +413,7 @@ class Database(DALBase, Singleton):
         self.items_tbl = {}
         self.users_recomm_tbl = {}
         self.users_ratings_tbl = {}
+        self.users_social_tbl = {}
 
         try:
             with open(filepath, 'rb') as f:
@@ -347,6 +421,7 @@ class Database(DALBase, Singleton):
                 self.items_tbl = data_from_file['items']
                 self.users_ratings_tbl = data_from_file['item_ratings']
                 self.users_recomm_tbl = data_from_file['user_recomms']
+                self.users_social_tbl = data_from_file['user_social']
         except:
             r_value = False
             print >> sys.stderr, ("Error: unable to load data from file: %d" % (__base_error_code__ + 2))
@@ -360,6 +435,7 @@ class MemDALTest(unittest.TestCase):
         self.db = Database()
         self.db.init({})
         self.rating_counter = 0
+        self.social_counter = 0
         self.item_count = 100
         self.user_count = 50
 
@@ -368,6 +444,12 @@ class MemDALTest(unittest.TestCase):
 
     def on_remove_item_rating(self, *args, **kwargs):
         self.rating_counter -= 1
+
+    def on_insert_or_update_social(self, *args, **kwargs):
+        self.social_counter += 1
+
+    def on_remove_social(self, *args, **kwargs):
+        self.social_counter -= 1
 
     def test_init_and_insert(self):
 
@@ -395,6 +477,24 @@ class MemDALTest(unittest.TestCase):
                 self.db.remove_item_rating(u, u % 2)
 
         self.assertEquals(self.rating_counter, self.user_count/2)
+
+    def test_init_and_social(self):
+
+        self.db.register(self.db.insert_or_update_social, self.on_insert_or_update_social)
+
+        self.db.register(self.db.remove_social, self.on_remove_social)
+
+        for u in range(0, self.user_count):
+            v = (u + 1) % self.user_count  # each one follows the next one
+            self.db.insert_or_update_social(user_id=u, user_id_to=v, rating=u % 5)
+
+        self.assertEquals(self.db.get_social_count(), self.user_count)
+
+        for u in range(0, self.user_count):
+            v = (u + 1) % self.user_count  # each one follows the next one
+            self.db.remove_social(u, v)
+
+        self.assertEquals(self.db.get_social_count(), 0)
 
     def test_user_reconcile(self):
         self.rating_counter = 0
