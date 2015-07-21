@@ -132,15 +132,15 @@ class DALBase(Observable):
 
     @abc.abstractmethod
     @observable
-    def insert_or_update_item_rating(self, user_id, item_id, rating=3.0):
+    def insert_or_update_social_action(self, user_id, user_id_to, code=3.0):
         """
-        insert a new item rating on datastore, for each user a list of ratings will be mantained:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+        insert a new user id on datastore, for each user a list of actions will be mantained:
+            user0: { 'user_0':3.0, ..., 'user_N':5.0}
             ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+            userN: { 'user_0':3.0, ..., 'user_N':5.0}
         :param user_id: user id
-        :param item_id: item id
-        :param rating: the rating, default value is 3.0
+        :param user_id_to: user id
+        :param code: the code, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
         #TODO: implement me
@@ -148,7 +148,23 @@ class DALBase(Observable):
 
     @abc.abstractmethod
     @observable
-    def remove_item_rating(self, user_id, item_id):
+    def insert_or_update_item_action(self, user_id, item_id, code=3.0):
+        """
+        insert a new item code on datastore, for each user a list of ratings will be mantained:
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            ...
+            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+        :param user_id: user id
+        :param item_id: item id
+        :param code: the code, default value is 3.0
+        :return: True if the operation was successfully executed, otherwise return False
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    @observable
+    def remove_item_action(self, user_id, item_id):
         """
         remove an item rating from datastore
         :param user_id: user id
@@ -159,7 +175,19 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    def get_all_item_ratings(self):
+    @observable
+    def remove_social_action(self, user_id, iser_id_to):
+        """
+        remove an item rating from datastore
+        :param user_id: user id
+        :param item_id: item id
+        :return: True if the operation was successfully executed or it does not exists, otherwise return False
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def get_all_users_item_actions(self):
         """
         return a dictionary with all ratings:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -171,12 +199,35 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    def get_item_ratings(self, user_id):
+    def get_user_item_actions(self, user_id):
         """
         retrieve the list of ratings made by the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
         :param user_id: user id
         :return: the ratings of a user, if the user does not exists returns an empty dictionary
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def get_all_social_actions(self):
+        """
+        return a dictionary with all social actions performed BY each user:
+            user0: { 'user_1':3.0, ..., 'user_M':5.0}
+            ...
+            userN: { 'user_0':3.0, ..., 'user_M':5.0}
+        :return: a dictionary with action codes
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def get_user_social_actions(self, user_id):
+        """
+        retrieve the list of ratings made by the user
+            user0: { 'user_1': 3.0, ..., 'user_M': 5.0}
+        :param user_id: user id
+        :return: the social action performed by a user, if the user does not exists returns an empty dictionary
         """
         #TODO: implement me
         return

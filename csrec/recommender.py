@@ -26,8 +26,8 @@ class Recommender(Singleton):
         # registering callback functions for datastore events
         self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
         self.db.register(self.db.remove_item, self.on_remove_item)
-        self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
-        self.db.register(self.db.remove_item_rating, self.on_remove_item_rating)
+        self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
+        self.db.register(self.db.remove_item_action, self.on_remove_item_rating)
         self.db.register(self.db.reconcile_user, self.on_reconcile_user)
         self.db.register(self.db.serialize, self.on_serialize)
         self.db.register(self.db.restore, self.on_restore)
@@ -39,7 +39,6 @@ class Recommender(Singleton):
         self.item_info = [] #any information given with item, e.g. ['author', 'category', 'subcategory']
         self.only_info = False #not used yet
         self.max_rating = max_rating
-        self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self._categories_cooccurrence = {} # cooccurrence of categories
 
         # categories --same as above, but separated as they are not always available
@@ -59,12 +58,10 @@ class Recommender(Singleton):
         #TODO: to implement
         pass
 
-    def on_insert_or_update_item_rating(self, user_id, item_id, rating=3.0, return_value=None):
+    def on_insert_or_update_item_action(self, user_id, item_id, code=3.0, return_value=None):
         """
-        item is treated as item_id if it is not a dict, otherwise we look
-        for a key called item_id_key if it is a dict.
 
-        self.item_info can be any further information given with the dict item.
+       self.item_info can be any further information given with the dict item.
         e.g. author, category etc
 
         NB NO DOTS IN user_id, or they will be taken away. Fields in mongodb cannot have dots..
@@ -75,8 +72,8 @@ class Recommender(Singleton):
          to retrieve the info that s/he likes JK Rowling, narrative, magic etc
 
         :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
-        :param item_id: id of item
-        :param rating: float parseable
+        :param item_id: is either id or a dict with item_id_key
+        :param code: float parseable
         :return: None
         """
         if not return_value:  # do nothing if the insert fail
@@ -125,11 +122,11 @@ class Recommender(Singleton):
                         # Take total number of ratings and total rating:
                         for value in values:
                             if len(str(value)) > 0:
-                                self.tot_categories_user_ratings[k][user_id][value] += int(rating)
+                                self.tot_categories_user_ratings[k][user_id][value] += int(code)
                                 self.n_categories_user_ratings[k][user_id][value] += 1
                                 # for the co-occurrence matrix is not necessary to do the same for item, but better do it
                                 # in case we want to compute similarities etc using categories
-                                self.tot_categories_item_ratings[k][value][user_id] += int(rating)
+                                self.tot_categories_item_ratings[k][value][user_id] += int(code)
 
     def on_remove_item_rating(self, user_id, item_id, return_value):
         #TODO: to implement
@@ -157,14 +154,14 @@ class Recommender(Singleton):
             user_id = item[0]
             ratings = item[1]
             for item_id, rating in ratings.items():
-                self.on_insert_or_update_item_rating(user_id=user_id, item_id=item_id, rating=rating, return_value=True)
+                self.on_insert_or_update_item_action(user_id=user_id, item_id=item_id, code=rating, return_value=True)
 
     def _create_cooccurrence(self):
         """
         Create or update the co-occurrence matrix
         :return:
         """
-        all_ratings = self.db.get_all_item_ratings()
+        all_ratings = self.db.get_all_users_item_actions()
         df = pd.DataFrame(all_ratings).fillna(0).astype(int)  # convert dictionary to pandas dataframe
 
         #calculate co-occurrence matrix
@@ -199,14 +196,14 @@ class Recommender(Singleton):
         else:
             self.items_by_popularity_updated = time()
 
-        df_item = pd.DataFrame(self.db.get_all_item_ratings()).T.fillna(0).astype(int).sum()
+        df_item = pd.DataFrame(self.db.get_all_users_item_actions()).T.fillna(0).astype(int).sum()
         df_item.sort(ascending=False)
         pop_items = list(df_item.index)
         if len(pop_items) >= max_items:
             self.items_by_popularity = pop_items
         else:
             all_items = set(self.db.get_all_items().keys())
-            self.items_by_popularity = pop_items + list( all_items - set(pop_items) )
+            self.items_by_popularity = pop_items + list(all_items - set(pop_items) )
 
     def set_item_info(self, item_info):
         self.item_info = self.info_used
@@ -243,10 +240,10 @@ class Recommender(Singleton):
         item_based = False  # has user rated some items?
         info_based = []  # user has rated the category (e.g. the category "author" etc)
         df_user = None
-        if self.db.get_item_ratings(user_id):  # compute item-based rec only if user has rated smt
+        if self.db.get_user_item_actions(user_id):  # compute item-based rec only if user has rated smt
             item_based = True
             #Just take user_id for the user vector
-            df_user = pd.DataFrame(self.db.get_all_item_ratings()).fillna(0).astype(int)[[user_id]]
+            df_user = pd.DataFrame(self.db.get_all_users_item_actions()).fillna(0).astype(int)[[user_id]]
         info_used = self.info_used
         if len(info_used) > 0:
             for i in info_used:

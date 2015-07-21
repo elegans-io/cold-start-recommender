@@ -27,18 +27,29 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write("Cold Start Recommender v. " + str(csrec.__version__) + "\n")
 
 
-class InsertRating(webapp2.RequestHandler):
+class UpdateRating(webapp2.RequestHandler):
     """
     e.g.:
-    curl -X POST  'localhost:8081/insertrating?item=Book1&user=User1&rating=4'
+    curl -X POST  'localhost:8081/update/rating?item=Book1&user=User1&rating=4'
     """
     def post(self):
-        db.insert_or_update_item_rating(
+        db.insert_or_update_item_action(
             user_id=self.request.get('user'),
             item_id=self.request.get('item'),
             rating=float(self.request.get('rating'))
         )
 
+class UpdateSocial(webapp2.RequestHandler):
+    """
+    e.g.:
+    curl -X POST  'localhost:8081/update/social?user=User1&user_to=User2&code=4'
+    """
+    def post(self):
+        db.insert_or_update_social(
+            user_id=self.request.get('user'),
+            item_id=self.request.get('user_to'),
+            code=float(self.request.get('code'))
+        )
 
 class UpdateItem(webapp2.RequestHandler):
     """
@@ -98,7 +109,7 @@ class Info(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/insert/rating', InsertRating),
+    ('/update/rating', UpdateRating),
     ('/update/items', UpdateItem),
     ('/items', GetItems),
     ('/recommend', Recommend),
