@@ -8,9 +8,9 @@ def DALFactory(name='mem', params=None):
     if name == 'mem':
         import MemDAL
         dal = MemDAL.Database()
-    elif name == 'mongo':
-        import MongoDAL
-        dal = MongoDAL.Database()
+    # elif name == 'mongo':
+    #     import MongoDAL
+    #     dal = MongoDAL.Database()
     else:
         dal = None
 

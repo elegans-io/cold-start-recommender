@@ -42,7 +42,7 @@ while purchase < n_purchases:
         item_id = str(book_n)
         rating = random.randrange(1, 6)
         #print 'user', user_id, 'rated', rating, 'stars item', item_id
-        db.insert_or_update_item_rating(user_id = user_id, item_id = item_id, rating=3.0)
+        db.insert_or_update_item_action(user_id = user_id, item_id = item_id, rating=3.0)
 
 print ("Info: compute_items_by_popularity")
 engine.compute_items_by_popularity()

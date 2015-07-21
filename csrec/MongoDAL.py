@@ -202,29 +202,29 @@ class Database(DALBase):
         return item
 
     @observable
-    def insert_or_update_item_rating(self, user_id, item_id, rating=3.0):
+    def insert_or_update_item_action(self, user_id, item_id, code=3.0):
         """
-        insert a new item rating on datastore, for each user a list of ratings will be stored:
+        insert a new item code on datastore, for each user a list of ratings will be stored:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
 
         :param user_id: user id
         :param item_id: item id
-        :param rating: the rating, default value is 3.0
+        :param code: the code, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
-        item = {str(item_id): rating}
+        item = {str(item_id): code}
         try:
             self._db['users_ratings_tbl'].update({"_id": str(user_id)}, {"$set": item}, upsert=True)
         except:
-            print >> sys.stderr, ("Error: failed to insert item rating")
+            print >> sys.stderr, ("Error: failed to insert item code")
             print item
             return False
         return True
 
     @observable
-    def remove_item_rating(self, user_id, item_id):
+    def remove_item_action(self, user_id, item_id):
         """
         remove an item rating from datastore
 
@@ -239,7 +239,7 @@ class Database(DALBase):
             return False
         return True
 
-    def get_all_item_ratings(self):
+    def get_all_users_item_actions(self):
         """
         return a dictionary with all ratings:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -261,7 +261,7 @@ class Database(DALBase):
 
         return users_ratings_tbl
 
-    def get_item_ratings(self, user_id):
+    def get_user_item_actions(self, user_id):
         """
         retrieve the list of ratings made by the user
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -291,14 +291,14 @@ class Database(DALBase):
         # load dictionaries
         old_usr_dictionary = {}
         try:
-            old_usr_dictionary = self.get_item_ratings(old_user_id)
+            old_usr_dictionary = self.get_user_item_actions(old_user_id)
             self._db['users_ratings_tbl'].remove({"_id": str(old_user_id)})
         except:
             pass
 
         new_usr_dictionary = {}
         try:
-            new_usr_dictionary = self.get_item_ratings(new_user_id)
+            new_usr_dictionary = self.get_user_item_actions(new_user_id)
             self._db['users_ratings_tbl'].remove({"_id": str(new_user_id)})
         except:
             pass
@@ -313,7 +313,7 @@ class Database(DALBase):
         old_usr_dictionary.update(new_usr_dictionary)
 
         for k in old_usr_dictionary:
-            self.insert_or_update_item_rating(new_user_id, k, old_usr_dictionary[k])
+            self.insert_or_update_item_action(new_user_id, k, old_usr_dictionary[k])
         try:
             del old_usr_dictionary['_id']
         except:
@@ -431,7 +431,7 @@ class MongoDALTest(unittest.TestCase):
         self.item_count = 100
         self.user_count = 50
 
-    def on_insert_or_update_item_rating(self, *args, **kwargs):
+    def on_insert_or_update_item_action(self, *args, **kwargs):
         self.rating_counter += 1
 
     def on_remove_item_rating(self, *args, **kwargs):
@@ -439,9 +439,9 @@ class MongoDALTest(unittest.TestCase):
 
     def test_init_and_insert(self):
 
-        self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
+        self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
 
-        self.db.register(self.db.remove_item_rating, self.on_remove_item_rating)
+        self.db.register(self.db.remove_item_action, self.on_remove_item_rating)
 
         for i in range(0, self.item_count):
             for j in range(0, self.item_count * 1):
@@ -450,15 +450,15 @@ class MongoDALTest(unittest.TestCase):
                 self.assertEquals(r, True)
 
         for u in range(0, self.user_count):
-            r = self.db.insert_or_update_item_rating(user_id=u, item_id=self.item_count % max(u, 1), rating=u % 5)
+            r = self.db.insert_or_update_item_action(user_id=u, item_id=self.item_count % max(u, 1), rating=u % 5)
             self.assertEquals(r, True)
 
     def test_user_reconcile(self):
         self.rating_counter = 0
-        self.db.register(self.db.insert_or_update_item_rating, self.on_insert_or_update_item_rating)
+        self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
 
         for u in range(0, self.user_count * 100):
-            self.db.insert_or_update_item_rating(user_id=u % self.user_count, item_id=u % self.item_count, rating=u % 5)
+            self.db.insert_or_update_item_action(user_id=u % self.user_count, item_id=u % self.item_count, rating=u % 5)
 
         merged_ratings = 0
         for u in range(0, self.user_count, 2):
