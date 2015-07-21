@@ -108,12 +108,13 @@ app = webapp2.WSGIApplication([
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Launch a webapp with the recommender")
-    parser.add_argument('-p', '--port', type=str, default='8081')
+    parser = argparse.ArgumentParser(description="Launch a webapp with the recommender. Only in-memory for now")
+    parser.add_argument('--port', type=str, default='8081', help='Port, default 8081')
+    parser.add_argument('--host', type=str, default='localhost', help='hostname, default localhost')
     #TODO parser.add_argument('-d', '--db', type=str, default='mem')
     parser.parse_args()
     args = parser.parse_args()
-    httpserver.serve(app, host='127.0.0.1', port=args.port, use_threadpool=True, threadpool_workers=10)
+    httpserver.serve(app, host=args.host, port=args.port, use_threadpool=True, threadpool_workers=10)
 
 if __name__ == '__main__':
     main()
