@@ -151,7 +151,11 @@ class Database(DALBase, Singleton):
     def get_item(self, item_id):
         """
         return an item by ID
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            item_id: {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
 
         :param user_id: user id
         :return: the item record
@@ -161,6 +165,29 @@ class Database(DALBase, Singleton):
         except KeyError:
             return None
         return item
+
+    def get_item_value(self, item_id, key):
+        """
+        return the value of an information of the item.
+        e.g. If we have
+
+        item_id: {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+
+        item_id, category return "horror"
+
+        :param item_id: user id
+        :param key: the name or the info
+        :return: value of the info in the item
+        """
+        try:
+            value = self.items_tbl[item_id][key]
+        except KeyError:
+            return None
+        return value
 
     @observable
     def insert_or_update_social_action(self, user_id, user_id_to, code=3.0):
