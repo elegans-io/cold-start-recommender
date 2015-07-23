@@ -124,8 +124,29 @@ class DALBase(Observable):
                 "subcategory":["splatter", "zombies"],
                 ...
             }
-        :param user_id: user id
+        :param item_id: user id
         :return: the item record
+        """
+        #TODO: implement me
+        return
+
+    @abc.abstractmethod
+    def get_item_value(self, item_id, key):
+        """
+        return the value of an information of the item.
+        e.g. If we have
+
+        item_id: {"author": "AA. VV.",
+                "category":"horror",
+                "subcategory":["splatter", "zombies"],
+                ...
+            }
+
+        item_id, category return "horror"
+
+        :param item_id: user id
+        :param key: the name or the info
+        :return: value of the info in the item
         """
         #TODO: implement me
         return
