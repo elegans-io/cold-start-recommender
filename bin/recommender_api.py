@@ -8,7 +8,6 @@ import json
 import argparse
 from paste import httpserver
 
-
 """
 Usage:
 python recommender_api.py
