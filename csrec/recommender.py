@@ -35,19 +35,22 @@ class Recommender(Singleton):
         # Algorithm's specific attributes
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self.cooccurrence_updated = 0.0
-        self.info_used = set() # Info used in addition to item_id. Only for in-memory testing, otherwise there is utils collection in the MongoDB
-        self.item_info = [] #any information given with item, e.g. ['author', 'category', 'subcategory']
-        self.only_info = False #not used yet
-        self.max_rating = max_rating
-        self._categories_cooccurrence = {} # cooccurrence of categories
+        # Info in item_meaningful_info with whom some user has actually interacted
+        self.info_used = set()
+        self._categories_cooccurrence = {}  # cooccurrence of categories
 
         # categories --same as above, but separated as they are not always available
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
         self.items_by_popularity = []
-
         self.last_serialization_time = 0.0  # Time of data backup
+        # configurations:
+        # any information given with item which should be used for recs, e.g. ['author', 'category', 'subcategory']
+        self.item_meaningful_info = []
+        self.only_info = False
+        self.max_rating = max_rating
+
 
     def on_insert_or_update_item(self, item_id, attributes, return_value):
         #TODO: to implement
@@ -60,12 +63,12 @@ class Recommender(Singleton):
     def on_insert_or_update_item_action(self, user_id, item_id, code=3.0, return_value=None):
         """
 
-       self.item_info can be any further information given with the dict item.
+       self.item_meaningful_info can be any further information given with the dict item.
         e.g. author, category etc
 
         NB NO DOTS IN user_id, or they will be taken away. Fields in mongodb cannot have dots..
 
-        If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
+        If self.only_info==True, only the self.item_meaningful_info's are put in the co-occurrence, not item_id.
          This is necessary when we have for instance a "segmentation page" where we propose
          well known items to get to know the user. If s/he select "Harry Potter" we only want
          to retrieve the info that s/he likes JK Rowling, narrative, magic etc
@@ -78,10 +81,10 @@ class Recommender(Singleton):
         if not return_value:  # do nothing if the insert fail
             return
 
-        if not self.item_info:
-            self.item_info = []
+        if not self.item_meaningful_info:
+            self.item_meaningful_info = []
 
-        # If self.only_info==True, only the self.item_info's are put in the co-occurrence, not item_id.
+        # If self.only_info==True, only the self.item_meaningful_info's are put in the co-occurrence, not item_id.
         # This is necessary when we have for instance a "segmentation page" where we propose
         # well known items to get to know the user. If s/he select "Harry Potter" we only want
         # to retrieve the info that s/he likes JK Rowling, narrative, magic etc
@@ -92,9 +95,9 @@ class Recommender(Singleton):
         item = self.db.get_item(item_id)
         if item:
             # Do categories only if the item is stored
-            if len(self.item_info) > 0:
+            if len(self.item_meaningful_info) > 0:
                 for k, v in item.items():
-                    if k in self.item_info:
+                    if k in self.item_meaningful_info:
                         # Some items' attributes are lists (e.g. tags: [])
                         # or, worse, string which can represent lists...
                         try:
@@ -195,18 +198,6 @@ class Recommender(Singleton):
         pop_items = list(df_item.index)
         all_items = set(self.db.get_all_items().keys())
         self.items_by_popularity = (pop_items + list(all_items - set(pop_items)))
-
-    def set_item_info(self, item_info):
-        self.item_info = self.info_used
-
-    def get_item_info(self):
-        return self.item_info
-
-    def set_only_info(self, only_info):
-        self.only_info=only_info
-
-    def get_only_info(self, only_info):
-        return self.only_info
 
     def get_recommendations(self, user_id, max_recs=50, fast=False, algorithm='item_based'):
         """
