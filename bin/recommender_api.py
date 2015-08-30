@@ -17,7 +17,7 @@ Start a webapp for testing the recommender.
 """
 
 db = DALFactory(name='mem', params={})  # instantiate an in memory database
-engine = Recommender(db)
+engine = Recommender(db, log_level=True)
 
 
 class MainPage(webapp2.RequestHandler):
@@ -26,51 +26,52 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write("Cold Start Recommender v. " + str(csrec.__version__) + "\n")
 
 
-class UpdateRating(webapp2.RequestHandler):
-    """
-    e.g.:
-    curl -X POST  'localhost:8081/update/rating?item=Book1&user=User1&rating=4'
-    """
-    def post(self):
-        db.insert_or_update_item_action(
-            user_id=self.request.get('user'),
-            item_id=self.request.get('item'),
-            rating=float(self.request.get('rating'))
-        )
-
-class UpdateSocial(webapp2.RequestHandler):
-    """
-    e.g.:
-    curl -X POST  'localhost:8081/update/social?user=User1&user_to=User2&code=4'
-    """
-    def post(self):
-        db.insert_or_update_social(
-            user_id=self.request.get('user'),
-            item_id=self.request.get('user_to'),
-            code=float(self.request.get('code'))
-        )
-
-class UpdateItem(webapp2.RequestHandler):
+class UpdateItems(webapp2.RequestHandler):
     """
     Update (or insert) item. The unique_id must be given as param
     e.g.:
-    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, { "_id" : "124", "type": "male", "category" : "hardcore"}]' http://localhost:8081/update/items?unique_id=_id
+    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, { "_id" : "124", "type": "male", "category" : "hardcore"}]' 'http://localhost:8081/updateitems?unique_id=_id'
     """
     def post(self):
         items = json.loads(self.request.body)
         item_id = self.request.params['unique_id']
         for i in items:
-            print "UpdateItem: inserting", i
-            db.insert_or_update_item(item_id=item_id, attributes=i)
+            db.insert_or_update_item(item_id=i[item_id], attributes=i)
 
 
-class GetItems(webapp2.RequestHandler):
+class ItemAction(webapp2.RequestHandler):
     """
-    curl -X GET  'localhost:8081/items?id=Book1'
+    e.g.:
+    curl -X POST  'http://localhost:8081/itemaction?item=Book1&user=User1&code=4'
+    """
+    def post(self):
+        db.insert_or_update_item_action(
+            user_id=self.request.get('user'),
+            item_id=self.request.get('item'),
+            code=float(self.request.get('code'))
+        )
+
+
+class SocialAction(webapp2.RequestHandler):
+    """
+    e.g.:
+    curl -X POST  'http://localhost:8081/socialaction?user=User1&user_to=User2&code=4'
+    """
+    def post(self):
+        db.insert_or_update_social_action(
+            user_id=self.request.get('user'),
+            user_id_to=self.request.get('user_to'),
+            code=float(self.request.get('code'))
+        )
+
+
+class GetItem(webapp2.RequestHandler):
+    """
+    curl -X GET  'http://localhost:8081/item?id=Book1'
     """
     def get(self):
         item_id = self.request.get('id')
-        item_record = db.get_item(item_id = item_id)
+        item_record = db.get_item(item_id=item_id)
         self.response.write(item_record)
 
 
@@ -108,9 +109,10 @@ class Info(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/update/rating', UpdateRating),
-    ('/update/items', UpdateItem),
-    ('/items', GetItems),
+    ('/itemaction', ItemAction),
+    ('/updateitems', UpdateItems),
+    ('/socialaction', SocialAction),
+    ('/item', GetItem),
     ('/recommend', Recommend),
     ('/reconcile', Reconcile),
     ('/info', Info)
@@ -121,6 +123,7 @@ def main():
     parser = argparse.ArgumentParser(description="Launch a webapp with the recommender. Only in-memory for now")
     parser.add_argument('--port', type=str, default='8081', help='Port, default 8081')
     parser.add_argument('--host', type=str, default='localhost', help='hostname, default localhost')
+    parser.add_argument('--debug', action='store_true', help='Print debug info')
     #TODO parser.add_argument('-d', '--db', type=str, default='mem')
     parser.parse_args()
     args = parser.parse_args()
