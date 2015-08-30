@@ -9,7 +9,6 @@ import unittest
 import sys
 import pickle  # serialization library
 from dal import DALBase
-from Observable import observable
 from tools.Singleton import Singleton
 
 
@@ -23,7 +22,7 @@ class Database(DALBase, Singleton):
         self.users_recomm_tbl = None  # table with recommendations
         self.users_social_tbl = None  # table with action user-user
 
-    def init(self, params=None):
+    def init(self, **params):
         """
         initialization method
 
@@ -41,6 +40,7 @@ class Database(DALBase, Singleton):
             self.users_recomm_tbl = {}
             self.users_ratings_tbl = {}
             self.users_social_tbl = {}
+            print >> sys.stderr, ("MemDAL initialized")
         except:
             print >> sys.stderr, ("Error: unable to initialize tables: %d" % __base_error_code__)
             return_value = False
@@ -98,8 +98,7 @@ class Database(DALBase, Singleton):
             recomm = {}
         return recomm
 
-    @observable
-    def insert_or_update_item(self, item_id, attributes):
+    def insert_item(self, item_id, attributes=None):
         """
         insert a new item on datastore
 
@@ -112,10 +111,12 @@ class Database(DALBase, Singleton):
             }
         :return: True if the operation was successfully executed, otherwise return False
         """
-        self.items_tbl[item_id] = attributes
+        if attributes:
+            self.items_tbl[item_id] = attributes
+        else:
+            self.items_tbl[item_id] = {}
         return True
 
-    @observable
     def remove_item(self, item_id):
         """
         remove an item from datastore, remove also all references from ratings
@@ -157,14 +158,10 @@ class Database(DALBase, Singleton):
                 ...
             }
 
-        :param user_id: user id
+        :param item_id: item id
         :return: the item record
         """
-        try:
-            item = self.items_tbl[item_id]
-        except KeyError:
-            return None
-        return item
+        return self.items_tbl.get(item_id)
 
     def get_item_value(self, item_id, key):
         """
@@ -183,14 +180,9 @@ class Database(DALBase, Singleton):
         :param key: the name or the info
         :return: value of the info in the item
         """
-        try:
-            value = self.items_tbl[item_id][key]
-        except KeyError:
-            return None
-        return value
+        return self.items_tbl.get(item_id, {}).get(key)
 
-    @observable
-    def insert_or_update_social_action(self, user_id, user_id_to, code=3.0):
+    def insert_social_action(self, user_id, user_id_to, code=3.0):
         """
 
         :param user_id_from:
@@ -204,8 +196,7 @@ class Database(DALBase, Singleton):
             self.users_social_tbl[user_id] = {user_id_to: code}
         return True
 
-    @observable
-    def insert_or_update_item_action(self, user_id, item_id, code=3.0):
+    def insert_item_action(self, user_id, item_id, code=3.0):
         """
         insert a new item code on datastore, for each user a list of ratings will be stored:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -223,7 +214,6 @@ class Database(DALBase, Singleton):
             self.users_ratings_tbl[user_id] = {item_id: code}
         return True
 
-    @observable
     def remove_item_action(self, user_id, item_id):
         """
         remove an item rating from datastore
@@ -238,7 +228,6 @@ class Database(DALBase, Singleton):
             return False
         return True
 
-    @observable
     def remove_social_action(self, user_id, user_id_to):
         """
         remove an user social action from datastore
@@ -286,7 +275,6 @@ class Database(DALBase, Singleton):
         """
         return self.users_social_tbl.get(user_id)
 
-    @observable
     def reconcile_user(self, old_user_id, new_user_id):
         """
         merge two users under the new user id, old user id will be removed
@@ -400,7 +388,6 @@ class Database(DALBase, Singleton):
         for user in self.users_social_tbl:
             yield {user: self.users_social_tbl[user]}
 
-    @observable
     def reset(self):
         """
         reset the datastore
@@ -413,7 +400,6 @@ class Database(DALBase, Singleton):
         self.users_social_tbl = {}
         return True
 
-    @observable
     def serialize(self, filepath):
         """
         dump the datastore on file
@@ -435,7 +421,6 @@ class Database(DALBase, Singleton):
 
         return r_value
 
-    @observable
     def restore(self, filepath):
         """
         restore the datastore from file
@@ -489,18 +474,18 @@ class MemDALTest(unittest.TestCase):
 
     def test_init_and_insert(self):
 
-        self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
+        self.db.register(self.db.insert_item_action, self.on_insert_or_update_item_action)
 
         self.db.register(self.db.remove_item_action, self.on_remove_item_action)
 
         for i in range(0, self.item_count):
             for j in range(0, self.item_count * 10):
-                self.db.insert_or_update_item(i, {'author': j % 3, 'category': j % 7, 'subcategory': [j % 11, j % 13]})
+                self.db.insert_item(i, {'author': j % 3, 'category': j % 7, 'subcategory': [j % 11, j % 13]})
 
         self.assertEquals(self.db.get_items_count(), self.item_count)
 
         for u in range(0, self.user_count):
-            self.db.insert_or_update_item_action(user_id=u, item_id=self.item_count % max(u, 1), code=u % 5)
+            self.db.insert_item_action(user_id=u, item_id=self.item_count % max(u, 1), code=u % 5)
 
         self.assertEquals(self.db.get_user_count(), self.user_count)
 
@@ -516,13 +501,13 @@ class MemDALTest(unittest.TestCase):
 
     def test_init_and_social(self):
 
-        self.db.register(self.db.insert_or_update_social_action, self.on_insert_or_update_social_action)
+        self.db.register(self.db.insert_social_action, self.on_insert_or_update_social_action)
 
         self.db.register(self.db.remove_social_action, self.on_remove_social_action)
 
         for u in range(0, self.user_count):
             v = (u + 1) % self.user_count  # each one follows the next one
-            self.db.insert_or_update_social_action(user_id=u, user_id_to=v, code=u % 5)
+            self.db.insert_social_action(user_id=u, user_id_to=v, code=u % 5)
 
         self.assertEquals(self.db.get_social_count(), self.user_count)
 
@@ -534,10 +519,10 @@ class MemDALTest(unittest.TestCase):
 
     def test_user_reconcile(self):
         self.rating_counter = 0
-        self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
+        self.db.register(self.db.insert_item_action, self.on_insert_or_update_item_action)
 
         for u in range(0, self.user_count * 100):
-            self.db.insert_or_update_item_action(user_id=u % self.user_count, item_id=u % self.item_count, code=u % 5)
+            self.db.insert_item_action(user_id=u % self.user_count, item_id=u % self.item_count, code=u % 5)
 
         merged_ratings = 0
         for u in range(0, self.user_count, 2):

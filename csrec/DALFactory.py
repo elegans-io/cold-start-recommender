@@ -4,7 +4,7 @@ __email__ = "info@elegans.io"
 # database abstraction layer factory
 
 
-def DALFactory(name='mem', params=None):
+def DALFactory(name='mem', **params):
     if name == 'mem':
         import MemDAL
         dal = MemDAL.Database()
@@ -14,8 +14,5 @@ def DALFactory(name='mem', params=None):
     else:
         dal = None
 
-    try:
-        dal.init(params=params)
-    except:
-        return None
+    dal.init(**params)
     return dal

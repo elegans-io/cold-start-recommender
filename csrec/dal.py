@@ -13,7 +13,7 @@ class DALBase(Observable):
         Observable.__init__(self)
 
     @abc.abstractmethod
-    def init(self, params = {}):
+    def init(self, **params):
         """
         initialization method
         :param params: dictionary of parameters
@@ -69,7 +69,7 @@ class DALBase(Observable):
 
     @abc.abstractmethod
     @observable
-    def insert_or_update_item(self, item_id, attributes):
+    def insert_item(self, item_id, attributes):
         """
         insert a new item on datastore
         :param item_id: item id
@@ -152,8 +152,7 @@ class DALBase(Observable):
         return
 
     @abc.abstractmethod
-    @observable
-    def insert_or_update_social_action(self, user_id, user_id_to, code=3.0):
+    def insert_social_action(self, user_id, user_id_to, code=3.0):
         """
         insert a new user id on datastore, for each user a list of actions will be mantained:
             user0: { 'user_0':3.0, ..., 'user_N':5.0}
@@ -169,7 +168,7 @@ class DALBase(Observable):
 
     @abc.abstractmethod
     @observable
-    def insert_or_update_item_action(self, user_id, item_id, code=3.0):
+    def insert_item_action(self, user_id, item_id, code=3.0):
         """
         insert a new item code on datastore, for each user a list of ratings will be mantained:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}

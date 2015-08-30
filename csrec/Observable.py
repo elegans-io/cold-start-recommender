@@ -62,7 +62,7 @@ class Observable(object):
         except KeyError:
             return False
         else:
-            return op
+            return True
 
     def unregister_all(self):
         self.observers = {}
