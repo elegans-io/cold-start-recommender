@@ -24,7 +24,7 @@ class Recommender(Singleton):
         self.db = db
 
         # registering callback functions for datastore events
-        # self.db.register(self.db.insert_or_update_item, self.on_insert_or_update_item)
+        self.db.register(self.db.insert_item, self.on_insert_item)
         # self.db.register(self.db.remove_item, self.on_remove_item)
         # self.db.register(self.db.insert_or_update_item_action, self.on_insert_or_update_item_action)
         # self.db.register(self.db.remove_item_action, self.on_remove_item_rating)
@@ -40,15 +40,19 @@ class Recommender(Singleton):
         self._categories_cooccurrence = {}  # cooccurrence of categories
 
         # categories --same as above, but separated as they are not always available
+        #TODO to be in the DAL
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
-        self.items_by_popularity = []
+        #END TODO
+        self.items_by_popularity = []  # can be recomputed on_restore
         self.last_serialization_time = 0.0  # Time of data backup
         # configurations:
         self.max_rating = max_rating
 
-    def insert_item(self, item_id, attributes):
+    def on_insert_item(self, item_id, attributes, return_value=None):
+        if not return_value:
+            return
         self.db.insert_item(item_id=item_id, attributes=attributes)
 
     def remove_item(self, item_id):

@@ -10,6 +10,7 @@ import sys
 import pickle  # serialization library
 from dal import DALBase
 from tools.Singleton import Singleton
+from Observable import observable
 
 
 class Database(DALBase, Singleton):
@@ -98,6 +99,7 @@ class Database(DALBase, Singleton):
             recomm = {}
         return recomm
 
+    @observable
     def insert_item(self, item_id, attributes=None):
         """
         insert a new item on datastore
@@ -208,6 +210,7 @@ class Database(DALBase, Singleton):
         :param code: the code, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
+        #TODO see the recommender one
         if user_id in self.users_ratings_tbl:
             self.users_ratings_tbl[user_id][item_id] = code
         else:
