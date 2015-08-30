@@ -26,7 +26,7 @@ class MainPage(webapp2.RequestHandler):
         self.response.out.write("Cold Start Recommender v. " + str(csrec.__version__) + "\n")
 
 
-class UpdateItems(webapp2.RequestHandler):
+class InsertItems(webapp2.RequestHandler):
     """
     Update (or insert) item. The unique_id must be given as param
     e.g.:
@@ -36,19 +36,26 @@ class UpdateItems(webapp2.RequestHandler):
         items = json.loads(self.request.body)
         item_id = self.request.params['unique_id']
         for i in items:
-            db.insert_or_update_item(item_id=i[item_id], attributes=i)
+            db.insert_item(item_id=i[item_id], attributes=i)
 
 
 class ItemAction(webapp2.RequestHandler):
     """
     e.g.:
-    curl -X POST  'http://localhost:8081/itemaction?item=Book1&user=User1&code=4'
+    curl -X POST  'http://localhost:8081/itemaction?item=Book1&user=User1&code=4&item_info=my_category&only_info=false'
     """
     def post(self):
-        db.insert_or_update_item_action(
+        only_info = self.request.get('only_info')
+        if only_info.lower() == 'true':
+            only_info = True
+        else:
+            only_info = False
+        db.insert_item_action(
             user_id=self.request.get('user'),
             item_id=self.request.get('item'),
-            code=float(self.request.get('code'))
+            code=float(self.request.get('code')),
+            item_meaningful_info=self.request.get('item_info'),
+            only_info=only_info
         )
 
 
@@ -58,7 +65,7 @@ class SocialAction(webapp2.RequestHandler):
     curl -X POST  'http://localhost:8081/socialaction?user=User1&user_to=User2&code=4'
     """
     def post(self):
-        db.insert_or_update_social_action(
+        db.insert_social_action(
             user_id=self.request.get('user'),
             user_id_to=self.request.get('user_to'),
             code=float(self.request.get('code'))
@@ -110,7 +117,7 @@ class Info(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/itemaction', ItemAction),
-    ('/updateitems', UpdateItems),
+    ('/insertitems', InsertItems),
     ('/socialaction', SocialAction),
     ('/item', GetItem),
     ('/recommend', Recommend),
