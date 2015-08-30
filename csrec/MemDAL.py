@@ -5,10 +5,12 @@ __email__ = "info@elegans.io"
 __base_error_code__ = 110
 
 import unittest
+from collections import defaultdict
 
 import sys
 import pickle  # serialization library
 from dal import DALBase
+from Observable import observable
 from tools.Singleton import Singleton
 from Observable import observable
 
@@ -18,10 +20,15 @@ class Database(DALBase, Singleton):
         DALBase.__init__(self)
 
         self.__params_dictionary = {}  # abstraction layer initialization parameters
-        self.items_tbl = None  # table with items
-        self.users_ratings_tbl = None  # table with users rating
-        self.users_recomm_tbl = None  # table with recommendations
-        self.users_social_tbl = None  # table with action user-user
+
+        self.items_tbl = {}  # table with items
+        self.users_ratings_tbl = {}  # table with users rating
+        self.users_recomm_tbl = {}  # table with recommendations
+        self.users_social_tbl = {}  # table with action user-user
+
+        self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
+        self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
+        self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
 
     def init(self, **params):
         """
@@ -33,21 +40,13 @@ class Database(DALBase, Singleton):
         if not params:
             params = {}
 
-        self.__params_dictionary.update(params)
-        return_value = True
-
         try:
-            self.items_tbl = {}
-            self.users_recomm_tbl = {}
-            self.users_ratings_tbl = {}
-            self.users_social_tbl = {}
-            print >> sys.stderr, ("MemDAL initialized")
+            self.__params_dictionary.update(params)
         except:
-            print >> sys.stderr, ("Error: unable to initialize tables: %d" % __base_error_code__)
-            return_value = False
+            return False
+        return True
 
-        return return_value
-
+    @observable
     def insert_or_update_recomms(self, user_id, recommendations):
         """
         insert a new recommendation for a user
@@ -62,6 +61,7 @@ class Database(DALBase, Singleton):
         self.users_recomm_tbl[user_id] = recommendations
         return True
 
+    @observable
     def remove_recomms(self, user_id):
         """
         remove an item from datastore
@@ -75,6 +75,7 @@ class Database(DALBase, Singleton):
             return False
         return True
 
+    @observable
     def reset_recomms(self):
         """
         remove all recommendations from datastore
@@ -119,6 +120,7 @@ class Database(DALBase, Singleton):
             self.items_tbl[item_id] = {}
         return True
 
+    @observable
     def remove_item(self, item_id):
         """
         remove an item from datastore, remove also all references from ratings
@@ -184,6 +186,7 @@ class Database(DALBase, Singleton):
         """
         return self.items_tbl.get(item_id, {}).get(key)
 
+    @observable
     def insert_social_action(self, user_id, user_id_to, code=3.0):
         """
 
@@ -198,6 +201,7 @@ class Database(DALBase, Singleton):
             self.users_social_tbl[user_id] = {user_id_to: code}
         return True
 
+    @observable
     def insert_item_action(self, user_id, item_id, code=3.0):
         """
         insert a new item code on datastore, for each user a list of ratings will be stored:
@@ -217,6 +221,88 @@ class Database(DALBase, Singleton):
             self.users_ratings_tbl[user_id] = {item_id: code}
         return True
 
+    def insert_item_action_recommender(self, user_id, item_id, code=3.0, item_meaningful_info=None,
+                                       only_info=False, info_used=set()):
+        """
+
+        self.item_meaningful_info can be any further information given with the dict item.
+        e.g. author, category etc
+
+        NB NO DOTS IN user_id, or they will be taken away. Fields in mongodb cannot have dots..
+
+        If only_info==True, only the self.item_meaningful_info's are put in the co-occurrence, not item_id.
+         This is necessary when we have for instance a "segmentation page" where we propose
+         well known items to get to know the user. If s/he select "Harry Potter" we only want
+         to retrieve the info that s/he likes JK Rowling, narrative, magic etc
+
+        :param user_id: id of user. NO DOTS, or they will taken away. Fields in mongodb cannot have dots.
+        :param item_id: is either id or a dict with item_id_key
+        :param code: float parsable
+        :return: None
+        """
+        if not item_meaningful_info:
+            item_meaningful_info = []
+
+        # If self.only_info==True, only the self.item_meaningful_info's are put in the co-occurrence, not item_id.
+        # This is necessary when we have for instance a "segmentation page" where we propose
+        # well known items to get to know the user. If s/he select "Harry Potter" we only want
+        # to retrieve the info that s/he likes JK Rowling, narrative, magic etc
+
+        # Now fill the dicts or the db collections if available
+        user_id = str(user_id).replace('.', '')
+
+        item = self.get_item(item_id)
+        if item:
+            # Do categories only if the item is stored
+            if len(item_meaningful_info) > 0:
+                for k, v in item.items():
+                    if k in item_meaningful_info:
+                        # Some items' attributes are lists (e.g. tags: [])
+                        # or, worse, string which can represent lists...
+                        try:
+                            v = json.loads(v.replace("'", '"'))
+                        except:
+                            pass
+
+                        if not hasattr(v, '__iter__'):
+                            values = [v]
+                        else:
+                            values = v
+                        info_used.add(k)
+                        # we cannot set the rating, because we want to keep the info
+                        # that a user has read N books of, say, the same author,
+                        # category etc.
+                        # We could, but won't, sum all the ratings and count the a result as "big rating".
+                        # We won't because reading N books of author A and rating them 5 would be the same
+                        # as reading 5*N books of author B and rating them 1.
+                        # Therefore we take the average because --
+                        # 1) we don't want ratings for category to skyrocket
+                        # 2) if a user changes their idea on rating a book, it should not add up.
+                        # Average is not perfect, but close enough.
+                        #
+                        # Take total number of ratings and total rating:
+                        for value in values:
+                            if len(str(value)) > 0:
+                                self.tot_categories_user_ratings[k][user_id][value] += int(code)
+                                self.n_categories_user_ratings[k][user_id][value] += 1
+                                # for the co-occurrence matrix is not necessary to do the same for item, but better do it
+                                # in case we want to compute similarities etc using categories
+                                self.tot_categories_item_ratings[k][value][user_id] += int(code)
+        else:
+            self.insert_item(item_id=item_id)
+        if not only_info:
+            self.insert_item_action(user_id=user_id, item_id=item_id, code=code)
+
+    def get_tot_categories_user_ratings(self):
+        return self.tot_categories_user_ratings
+
+    def get_tot_categories_item_ratings(self):
+        return self.tot_categories_item_ratings
+
+    def get_n_categories_user_ratings(self):
+        return self.n_categories_user_ratings
+
+    @observable
     def remove_item_action(self, user_id, item_id):
         """
         remove an item rating from datastore
@@ -231,6 +317,7 @@ class Database(DALBase, Singleton):
             return False
         return True
 
+    @observable
     def remove_social_action(self, user_id, user_id_to):
         """
         remove an user social action from datastore
@@ -278,6 +365,7 @@ class Database(DALBase, Singleton):
         """
         return self.users_social_tbl.get(user_id)
 
+    @observable
     def reconcile_user(self, old_user_id, new_user_id):
         """
         merge two users under the new user id, old user id will be removed
@@ -391,6 +479,7 @@ class Database(DALBase, Singleton):
         for user in self.users_social_tbl:
             yield {user: self.users_social_tbl[user]}
 
+    @observable
     def reset(self):
         """
         reset the datastore
@@ -401,6 +490,9 @@ class Database(DALBase, Singleton):
         self.users_ratings_tbl = {}
         self.users_recomm_tbl = {}
         self.users_social_tbl = {}
+        self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
+        self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
+        self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
         return True
 
     def serialize(self, filepath):
@@ -416,7 +508,11 @@ class Database(DALBase, Singleton):
                 data_to_serialize = {'items': self.items_tbl,
                                      'item_ratings': self.users_ratings_tbl,
                                      'user_recomms': self.users_recomm_tbl,
-                                     'user_social': self.users_social_tbl}
+                                     'user_social': self.users_social_tbl,
+                                     'tot_categories_user_ratings': self.tot_categories_user_ratings,
+                                     'tot_categories_item_ratings': self.tot_categories_item_ratings,
+                                     'n_categories_user_ratings': self.n_categories_user_ratings
+                }
                 pickle.dump(data_to_serialize, f)
         except:
             r_value = False
@@ -424,6 +520,7 @@ class Database(DALBase, Singleton):
 
         return r_value
 
+    @observable
     def restore(self, filepath):
         """
         restore the datastore from file
@@ -434,10 +531,14 @@ class Database(DALBase, Singleton):
         # Write chunks of text data
 
         # reset existing data
-        self.items_tbl = {}
-        self.users_recomm_tbl = {}
-        self.users_ratings_tbl = {}
-        self.users_social_tbl = {}
+        self.items_tbl = {}  # table with items
+        self.users_ratings_tbl = {}  # table with users rating
+        self.users_recomm_tbl = {}  # table with recommendations
+        self.users_social_tbl = {}  # table with action user-user
+
+        self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
+        self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
+        self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
 
         try:
             with open(filepath, 'rb') as f:
@@ -446,6 +547,9 @@ class Database(DALBase, Singleton):
                 self.users_ratings_tbl = data_from_file['item_ratings']
                 self.users_recomm_tbl = data_from_file['user_recomms']
                 self.users_social_tbl = data_from_file['user_social']
+                self.tot_categories_user_ratings = data_from_file['tot_categories_user_ratings']
+                self.tot_categories_item_ratings = data_from_file['tot_categories_item_ratings']
+                self.n_categories_user_ratings = data_from_file['n_categories_user_ratings']
         except:
             r_value = False
             print >> sys.stderr, ("Error: unable to load data from file: %d" % (__base_error_code__ + 2))
