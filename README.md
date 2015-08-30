@@ -42,22 +42,32 @@ library.
 A simple script
 ---------------
 
-    from csrec import Recommender
+    from csrec import Recommender, DALFactory
     
     db = DALFactory(name='mem')  # instantiate an in memory database
 	engine = Recommender(db=db)
 
-    # Insert Item with it properties (e.g. author, category...)
+    # Insert items with their properties (e.g. author, tags...)
     # NB lists can be passed as json-parseable strings
-    engine.insert_item({'_id': 'an_item', 'author': 'The Author', 'tags': '["nice", "good"]'})
 
-    # Insert rating, indicating wich property of the Item should be used for producing recs
+    engine.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good"]'})
+    engine.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
+    engine.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
+    engine.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
 
-    engine.insert_rating(user_id='a_user', item_id='an_item', rating=4, item_info=['author', 'tags'])
+    # The following lines tell the recommender that user1 likes items 1,2,3, but also "Author A", "B", "Z"
+    # and tags "nice", "good" and "fair"
 
-    # Insert rating, indicating that only the property should be used for recs (e.g. initial users' profiling)
+    engine.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
+    engine.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
 
-    engine.insert_rating(user_id='another_user', item_id='an_item', rating=3, item_info=['author'], only_info=True)
+    # ...and user2 likes item3, "Author B", "nice" and "good" items:
+    engine.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
+
+    # ...and user3 likes item4, "Author C", but we give no information about the tag!
+    engine.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
+
+
 
 
 Dependencies
