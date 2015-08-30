@@ -42,7 +42,10 @@ class InsertItems(webapp2.RequestHandler):
 class ItemAction(webapp2.RequestHandler):
     """
     e.g.:
-    curl -X POST  'http://localhost:8081/itemaction?item=Book1&user=User1&code=4&item_info=my_category&only_info=false'
+    curl -X POST  'http://localhost:8081/itemaction?item=Book1&user=User1&code=1&item_info=my_category&only_info=false'
+    curl -X POST  'http://localhost:8081/itemaction?item=Book2&user=User1&code=2&item_info=my_category&only_info=false'
+    curl -X POST  'http://localhost:8081/itemaction?item=Book3&user=User2&code=3&item_info=my_category&only_info=false'
+    curl -X POST  'http://localhost:8081/itemaction?item=Book4&user=User2&code=4&item_info=my_category&only_info=false'
     """
     def post(self):
         only_info = self.request.get('only_info')
@@ -88,13 +91,16 @@ class Recommend(webapp2.RequestHandler):
     """
     def get(self):
         user = self.request.get('user')
-        max_recs = self.request.get('max_recs', 10)
+        max_recs = int(self.request.get('max_recs', 10))
         fast = self.request.get('fast', False)
         recomms = engine.get_recommendations(user, max_recs=max_recs, fast=fast)
         self.response.write(recomms)
 
 
 class Reconcile(webapp2.RequestHandler):
+    """
+    curl -X POST 'localhost:8081/reconcile?old=User1&new=User2'
+    """
     def post(self):
         old_user_id = self.request.get('old')
         new_user_id = self.request.get('new')
@@ -103,16 +109,21 @@ class Reconcile(webapp2.RequestHandler):
             new_user_id=new_user_id
         )
 
-
-class Info(webapp2.RequestHandler):
+class InfoUser(webapp2.RequestHandler):
     """
-    curl -X GET  'localhost:8081/info?user=User1'
+    curl -X GET  'localhost:8081/info/user?user=User1'
     """
     def get(self):
         user_id = self.request.get('user')
         user = db.get_user_item_actions(user_id=user_id)
         self.response.write(user)
 
+
+#TODO: POST /sosho/update/{uid}/profiling/{item_id}
+#TODO: GET /sosho/ranking/users/{type}
+#TODO: GET /sosho/ranking/items/{type}
+#TODO: GET /sosho/info/item/{item_id}
+#TODO: GET /sosho/query?item_id=X&category=Y
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
@@ -122,7 +133,7 @@ app = webapp2.WSGIApplication([
     ('/item', GetItem),
     ('/recommend', Recommend),
     ('/reconcile', Reconcile),
-    ('/info', Info)
+    ('/info/user', InfoUser)
 ], debug=False)
 
 

@@ -49,10 +49,10 @@ class HttpRecommTaskSet(TaskSet):
         response = self.client.get("/item", data={'item': item_id})
 
     @task(20)
-    def get_info(self):
+    def get_info_user(self):
         user_num = random.randint(0, 10000)
-        user_id = 'item_' + str(user_num)
-        response = self.client.get("/info", data={'user': user_id})
+        user_id = 'user_' + str(user_num)
+        response = self.client.get("/info/user", data={'user': user_id})
 
     @task(20)
     def recommend_fast(self):
