@@ -4,7 +4,7 @@ import numpy as np
 from time import time
 import logging
 import json
-from tools.Singleton import Singleton
+from csrec.tools.Singleton import Singleton
 
 
 class Recommender(Singleton):

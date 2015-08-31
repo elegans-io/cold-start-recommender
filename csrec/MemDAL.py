@@ -11,7 +11,7 @@ import sys
 import pickle  # serialization library
 from dal import DALBase
 from Observable import observable
-from tools.Singleton import Singleton
+from csrec.tools.Singleton import Singleton
 from Observable import observable
 
 

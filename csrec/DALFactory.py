@@ -6,7 +6,7 @@ __email__ = "info@elegans.io"
 
 def DALFactory(name='mem', **params):
     if name == 'mem':
-        import MemDAL
+        from csrec import MemDAL
         dal = MemDAL.Database()
     # elif name == 'mongo':
     #     import MongoDAL
