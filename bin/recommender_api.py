@@ -119,11 +119,11 @@ class InfoUser(webapp2.RequestHandler):
         self.response.write(user)
 
 
-#TODO: POST /sosho/update/{uid}/profiling/{item_id}
-#TODO: GET /sosho/ranking/users/{type}
-#TODO: GET /sosho/ranking/items/{type}
-#TODO: GET /sosho/info/item/{item_id}
-#TODO: GET /sosho/query?item_id=X&category=Y
+#TODO: POST /update/{uid}/profiling/{item_id}
+#TODO: GET /ranking/users/{type}
+#TODO: GET /ranking/items/{type}
+#TODO: GET /info/item/{item_id}
+#TODO: GET /query?item_id=X&category=Y
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
