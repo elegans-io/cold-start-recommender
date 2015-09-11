@@ -30,6 +30,11 @@ class Database(DALBase, Singleton):
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
 
+    @staticmethod
+    def get_init_parameters_description():
+        param_description = {}
+        return param_description
+
     def init(self, **params):
         """
         initialization method
@@ -66,7 +71,7 @@ class Database(DALBase, Singleton):
         """
         remove an item from datastore
 
-        :param item_id: item id
+        :param user_id: user_id
         :return: True if the operation was successfully executed, otherwise return False
         """
         try:
@@ -166,25 +171,6 @@ class Database(DALBase, Singleton):
         :return: the item record
         """
         return self.items_tbl.get(item_id)
-
-    def get_item_value(self, item_id, key):
-        """
-        return the value of an information of the item.
-        e.g. If we have
-
-        item_id: {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-
-        item_id, category return "horror"
-
-        :param item_id: user id
-        :param key: the name or the info
-        :return: value of the info in the item
-        """
-        return self.items_tbl.get(item_id, {}).get(key)
 
     @observable
     def insert_social_action(self, user_id, user_id_to, code=3.0):

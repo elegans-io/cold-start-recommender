@@ -22,6 +22,19 @@ class DALBase(Observable):  # interface of the data abstraction layer
         """
         raise NotImplementedError
 
+    @staticmethod
+    @abc.abstractmethod
+    def get_init_parameters_description():
+        """
+        return a description of the supported options like the following:
+
+        { "db_path", "the path of a database file previously initialized" }
+
+
+        :return: a dictionary with the supported options
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def insert_or_update_recomms(self, user_id, recommendations):
         """
@@ -119,26 +132,6 @@ class DALBase(Observable):  # interface of the data abstraction layer
             }
         :param item_id: user id
         :return: the item record
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_item_value(self, item_id, key):
-        """
-        return the value of an information of the item.
-        e.g. If we have
-
-        item_id: {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-
-        item_id, category return "horror"
-
-        :param item_id: user id
-        :param key: the name or the info
-        :return: value of the info in the item
         """
         raise NotImplementedError
 

@@ -207,7 +207,8 @@ class Recommender(Singleton):
                 for item_id, score in rec.iteritems():
                     #print("DEBUG [get_recommendations] rec_item_id: %s", k)
                     try:
-                        item_info_value = self.db.get_item_value(item_id=item_id, key=cat)
+                        item = self.db.get_item(item_id=item_id)
+                        item_info_value = item.get(cat, "")
 
                         #print("DEBUG get_recommendations. item value for %s: %s", cat, item_info_value)
                         # In case the info value is not in cat_rec (as it can obviously happen

@@ -30,7 +30,12 @@ class Database(DALBase):
             'replicaset': self.mongo_replica_set
         }
 
-    def init(self, params=None):
+    @staticmethod
+    def get_init_parameters_description():
+        param_description = {'host': 'mongo hostname', 'dbname': 'database name', 'replicaset': 'replica set'}
+        return param_description
+
+    def init(self, **params):
         """
         initialization method
 
@@ -119,7 +124,7 @@ class Database(DALBase):
         return recomm
 
     @observable
-    def insert_or_update_item(self, item_id, attributes):
+    def insert_item(self, item_id, attributes):
         """
         insert a new item on datastore
 
