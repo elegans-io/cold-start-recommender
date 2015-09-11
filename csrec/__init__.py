@@ -4,5 +4,5 @@ __license__ = "Lesser GPL"
 __maintainer__ = "elegans.io Ltd"
 __email__ = "info@elegans.io"
 
-from csrec.DALFactory import DALFactory
+from csrec.factory_dal import Dal
 from csrec.recommender import Recommender

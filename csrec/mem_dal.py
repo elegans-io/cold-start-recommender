@@ -9,10 +9,10 @@ from collections import defaultdict
 
 import sys
 import pickle  # serialization library
-from dal import DALBase
-from Observable import observable
-from csrec.tools.Singleton import Singleton
-from Observable import observable
+from csrec.dal import DALBase
+from csrec.tools.singleton import Singleton
+from csrec.tools.observable import observable
+from csrec.tools.observable import Observable
 
 
 class Database(DALBase, Singleton):
@@ -333,51 +333,30 @@ class Database(DALBase, Singleton):
         return True
 
     def get_all_users_item_actions(self):
-        """
-        return a dictionary with all ratings:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-        :return: a dictionary with ratings
-        """
         return self.users_ratings_tbl
 
     def get_user_item_actions(self, user_id):
-        """
-
-        :param user_id:
-        :return: {user_id: {item0: 1, ....}}
-        """
         return self.users_ratings_tbl.get(user_id)
 
-    def get_all_social_actions(self):
-        """
+    def get_users_actions_on_item(self, item_id):
+        users_actions = {}
+        for user in self.users_ratings_tbl:
+            try:
+                code = self.users_ratings_tbl[user][item_id]
+            except KeyError:
+                continue
+            else:
+                users_actions[user] = code
+        return users_actions
 
-        :return: a dict with all actions user to user
-        """
+    def get_all_social_actions(self):
         return self.users_social_tbl
 
     def get_user_social_actions(self, user_id):
-        """
-
-        :param user_id:
-        :return: {user_id: {u1: 1, u2: 1 ...}}
-        """
         return self.users_social_tbl.get(user_id)
 
     @observable
     def reconcile_user(self, old_user_id, new_user_id):
-        """
-        merge two users under the new user id, old user id will be removed
-        for each item rated more than once, those rated by new_user_id will be kept
-
-        Also, update the social table (user A -> user B)
-
-        :param old_user_id: old user id
-        :param new_user_id: new user id
-        :return: all the ratings of the new user
-        """
-
         # load dictionaries
         old_usr_dictionary = {}
         try:

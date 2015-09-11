@@ -2,11 +2,12 @@ __author__ = "elegans.io Ltd"
 __email__ = "info@elegans.io"
 
 import abc
-from Observable import Observable
-from Observable import observable
 
-#datastore abstraction layer: interface
-class DALBase(Observable):
+from csrec.tools.observable import Observable
+from csrec.tools.observable import observable
+
+
+class DALBase(Observable):  # interface of the data abstraction layer
     __metaclass__ = abc.ABCMeta
 
     def __init__(self):
@@ -19,8 +20,7 @@ class DALBase(Observable):
         :param params: dictionary of parameters
         :return: True if the class was successfully initialized, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def insert_or_update_recomms(self, user_id, recommendations):
@@ -33,8 +33,7 @@ class DALBase(Observable):
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def remove_recomms(self, item_id):
@@ -43,8 +42,7 @@ class DALBase(Observable):
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def reset_recomms(self):
@@ -53,8 +51,7 @@ class DALBase(Observable):
         :param item_id: item id
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_user_recomms(self, user_id):
@@ -64,8 +61,7 @@ class DALBase(Observable):
         :param user_id: user id
         :return: the recommendations for a user, if the user does not exists returns an empty dictionary
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -81,8 +77,7 @@ class DALBase(Observable):
             }
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -92,8 +87,7 @@ class DALBase(Observable):
         :param item_id: item id
         :return:
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_all_items(self):
@@ -112,8 +106,7 @@ class DALBase(Observable):
             }
         :return: a dictionary with ratings
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_item(self, item_id):
@@ -127,8 +120,7 @@ class DALBase(Observable):
         :param item_id: user id
         :return: the item record
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_item_value(self, item_id, key):
@@ -148,8 +140,7 @@ class DALBase(Observable):
         :param key: the name or the info
         :return: value of the info in the item
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def insert_social_action(self, user_id, user_id_to, code=3.0):
@@ -163,8 +154,7 @@ class DALBase(Observable):
         :param code: the code, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -179,8 +169,7 @@ class DALBase(Observable):
         :param code: the code, default value is 3.0
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -191,8 +180,7 @@ class DALBase(Observable):
         :param item_id: item id
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -203,8 +191,7 @@ class DALBase(Observable):
         :param item_id: item id
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_all_users_item_actions(self):
@@ -215,8 +202,7 @@ class DALBase(Observable):
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
         :return: a dictionary with ratings
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_user_item_actions(self, user_id):
@@ -226,8 +212,15 @@ class DALBase(Observable):
         :param user_id: user id
         :return: the ratings of a user, if the user does not exists returns an empty dictionary
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
+
+    def get_users_actions_on_item(self, item_id):
+        """
+        get actions on item made by users
+
+        :param item_id
+        """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_all_social_actions(self):
@@ -238,8 +231,7 @@ class DALBase(Observable):
             userN: { 'user_0':3.0, ..., 'user_M':5.0}
         :return: a dictionary with action codes
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_user_social_actions(self, user_id):
@@ -249,8 +241,7 @@ class DALBase(Observable):
         :param user_id: user id
         :return: the social action performed by a user, if the user does not exists returns an empty dictionary
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -262,8 +253,7 @@ class DALBase(Observable):
         :param new_user_id: new user id
         :return: all the ratings of the user
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_user_count(self):
@@ -271,8 +261,7 @@ class DALBase(Observable):
         count the number of users present in ratings table
         :return: the number of users
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_items_count(self):
@@ -280,8 +269,7 @@ class DALBase(Observable):
         count items
         :return: the number of items
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_item_ratings_iterator(self):
@@ -292,8 +280,7 @@ class DALBase(Observable):
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
         :return: an iterator on users ratings
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_items_iterator(self):
@@ -301,8 +288,7 @@ class DALBase(Observable):
         return an iterator on items
         :return: an iterator on items
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -311,8 +297,7 @@ class DALBase(Observable):
         reset the datastore
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -321,8 +306,7 @@ class DALBase(Observable):
         dump the datastore on file
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError
 
     @abc.abstractmethod
     @observable
@@ -331,5 +315,4 @@ class DALBase(Observable):
         restore the datastore from file
         :return: True if the operation was successfully executed, otherwise return False
         """
-        #TODO: implement me
-        return
+        raise NotImplementedError

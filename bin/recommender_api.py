@@ -2,7 +2,8 @@
 
 import webapp2
 from csrec import Recommender
-from csrec import DALFactory
+from csrec import factory_dal
+
 import csrec
 import json
 import argparse
@@ -16,9 +17,8 @@ Start a webapp for testing the recommender.
 
 """
 
-db = DALFactory(name='mem', params={})  # instantiate an in memory database
+db = factory_dal.Dal.get_dal(name='mem', params={})  # instantiate an in memory database
 engine = Recommender(db, log_level=True)
-
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -30,7 +30,9 @@ class InsertItems(webapp2.RequestHandler):
     """
     Update (or insert) item. The unique_id must be given as param
     e.g.:
-    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, { "_id" : "Book1", "type": "male", "category" : "hardcore"}]' 'http://localhost:8081/insertitems?unique_id=_id'
+    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, \
+        { "_id" : "Book1", "type": "male", "category" : "hardcore"}]' \
+        'http://localhost:8081/insertitems?unique_id=_id'
     """
     def post(self):
         items = json.loads(self.request.body)

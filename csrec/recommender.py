@@ -4,7 +4,7 @@ import numpy as np
 from time import time
 import logging
 import json
-from csrec.tools.Singleton import Singleton
+from csrec.tools.singleton import Singleton
 
 
 class Recommender(Singleton):
@@ -215,7 +215,7 @@ class Recommender(Singleton):
                         # an info (author etc) which is not in the rec'd info
                         if item_info_value:
                             global_rec[item_id] = score + cat_rec.get(cat, {}).get(item_info_value, 0)
-                    except Exception, e:
+                    except Exception as e:
                         self.logger.error("item %s, category %s", item_id, cat)
                         logging.exception(e)
         global_rec.sort(ascending=False)
