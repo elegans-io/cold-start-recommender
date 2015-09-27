@@ -36,7 +36,6 @@ class Recommender(Singleton):
         self._items_cooccurrence = pd.DataFrame  # cooccurrence of items
         self.cooccurrence_updated = 0.0
         # Info in item_meaningful_info with whom some user has actually interacted
-        self.info_used = set()
         self._categories_cooccurrence = {}  # cooccurrence of categories
 
         # categories --same as above, but separated as they are not always available
@@ -83,12 +82,13 @@ class Recommender(Singleton):
         #update co-occurrence matrix for items categories
         df_tot_cat_item = {}
 
-        if len(self.info_used) > 0:
+        info_used = self.db.get_info_used()
+        if len(info_used) > 0:
 
-            for i in self.info_used:
+            for i in info_used:
                 df_tot_cat_item[i] = pd.DataFrame(self.db.get_tot_categories_item_ratings()[i]).fillna(0).astype(int)
 
-            for i in self.info_used:
+            for i in info_used:
                 if type(df_tot_cat_item.get(i)) == pd.DataFrame:
                     df_tot_cat_item[i] = (df_tot_cat_item[i] / df_tot_cat_item[i]).replace(np.inf, 0)
                     self._categories_cooccurrence[i] = df_tot_cat_item[i].T.dot(df_tot_cat_item[i])
@@ -133,12 +133,15 @@ class Recommender(Singleton):
             user_has_rated_items = True
             # Just take user_id for the user vector
             df_user = pd.DataFrame(self.db.get_all_users_item_actions()).fillna(0).astype(int)[[user_id]]
-        if len(self.info_used) > 0:
-            for i in self.info_used:
+        info_used = self.db.get_info_used()
+        if len(info_used) > 0:
+            for i in info_used:
                 if self.db.get_tot_categories_user_ratings()[i].get(user_id):
                     rated_infos.append(i)
-                    df_tot_cat_user[i] = pd.DataFrame(self.db.get_tot_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
-                    df_n_cat_user[i] = pd.DataFrame(self.db.get_n_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
+                    df_tot_cat_user[i] =\
+                        pd.DataFrame(self.db.get_tot_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
+                    df_n_cat_user[i] =\
+                        pd.DataFrame(self.db.get_n_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
 
         if user_has_rated_items:
             if not fast or (time() - self.cooccurrence_updated > 1800):
@@ -187,7 +190,7 @@ class Recommender(Singleton):
 
         # User info on rated categories (in info_used)
         global_rec = rec.copy()
-        if len(self.info_used) > 0:
+        if len(info_used) > 0:
             cat_rec = {}
             if not fast or (time() - self.cooccurrence_updated > 1800):
                 self._create_cooccurrence()

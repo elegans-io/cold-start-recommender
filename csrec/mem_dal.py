@@ -13,7 +13,7 @@ from csrec.dal import DALBase
 from csrec.tools.singleton import Singleton
 from csrec.tools.observable import observable
 from csrec.tools.observable import Observable
-
+import json
 
 class Database(DALBase, Singleton):
     def __init__(self):
@@ -25,6 +25,7 @@ class Database(DALBase, Singleton):
         self.users_ratings_tbl = {}  # table with users rating
         self.users_recomm_tbl = {}  # table with recommendations
         self.users_social_tbl = {}  # table with action user-user
+        self.info_used = set()
 
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
@@ -53,27 +54,11 @@ class Database(DALBase, Singleton):
 
     @observable
     def insert_or_update_recomms(self, user_id, recommendations):
-        """
-        insert a new recommendation for a user
-
-        :param user_id: user id
-        :param recommendations: the recommendations for the user
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         self.users_recomm_tbl[user_id] = recommendations
         return True
 
     @observable
     def remove_recomms(self, user_id):
-        """
-        remove an item from datastore
-
-        :param user_id: user_id
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         try:
             del self.users_recomm_tbl[user_id]
         except KeyError:
@@ -82,23 +67,10 @@ class Database(DALBase, Singleton):
 
     @observable
     def reset_recomms(self):
-        """
-        remove all recommendations from datastore
-
-        :param item_id: item id
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         self.users_recomm_tbl = {}
         return True
 
     def get_user_recomms(self, user_id):
-        """
-        retrieve the list of recommendations for the user
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-
-        :param user_id: user id
-        :return: the recommendations for a user, if the user does not exists returns an empty dictionary
-        """
         try:
             recomm = self.users_recomm_tbl[user_id]
         except KeyError:
@@ -107,18 +79,6 @@ class Database(DALBase, Singleton):
 
     @observable
     def insert_item(self, item_id, attributes=None):
-        """
-        insert a new item on datastore
-
-        :param item_id: item id
-        :param attributes: a dictionary with item attributes e.g.
-            {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         if attributes:
             self.items_tbl[item_id] = attributes
         else:
@@ -127,12 +87,6 @@ class Database(DALBase, Singleton):
 
     @observable
     def remove_item(self, item_id):
-        """
-        remove an item from datastore, remove also all references from ratings
-
-        :param item_id: item id
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         try:
             del self.items_tbl[item_id]
         except KeyError:
@@ -140,47 +94,13 @@ class Database(DALBase, Singleton):
         return True
 
     def get_all_items(self):
-        """
-        return a dictionary with all items:
-            item_id0 : {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-            ...
-            item_idN : {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-
-        :return: a dictionary with ratings
-        """
         return self.items_tbl
 
     def get_item(self, item_id):
-        """
-        return an item by ID
-            item_id: {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-
-        :param item_id: item id
-        :return: the item record
-        """
         return self.items_tbl.get(item_id)
 
     @observable
     def insert_social_action(self, user_id, user_id_to, code=3.0):
-        """
-
-        :param user_id_from:
-        :param user_id_to:
-        :param code:
-        :return:
-        """
         if user_id in self.users_social_tbl:
             self.users_social_tbl[user_id][user_id_to] = code
         else:
@@ -188,27 +108,7 @@ class Database(DALBase, Singleton):
         return True
 
     @observable
-    def insert_item_action(self, user_id, item_id, code=3.0):
-        """
-        insert a new item code on datastore, for each user a list of ratings will be stored:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-
-        :param user_id: user id
-        :param item_id: item id
-        :param code: the code, default value is 3.0
-        :return: True if the operation was successfully executed, otherwise return False
-        """
-        #TODO see the recommender one
-        if user_id in self.users_ratings_tbl:
-            self.users_ratings_tbl[user_id][item_id] = code
-        else:
-            self.users_ratings_tbl[user_id] = {item_id: code}
-        return True
-
-    def insert_item_action_recommender(self, user_id, item_id, code=3.0, item_meaningful_info=None,
-                                       only_info=False, info_used=set()):
+    def insert_item_action(self, user_id, item_id, code=3.0, item_meaningful_info=None, only_info=False):
         """
 
         self.item_meaningful_info can be any further information given with the dict item.
@@ -254,7 +154,7 @@ class Database(DALBase, Singleton):
                             values = [v]
                         else:
                             values = v
-                        info_used.add(k)
+                        self.set_info_used(k)
                         # we cannot set the rating, because we want to keep the info
                         # that a user has read N books of, say, the same author,
                         # category etc.
@@ -271,13 +171,17 @@ class Database(DALBase, Singleton):
                             if len(str(value)) > 0:
                                 self.tot_categories_user_ratings[k][user_id][value] += int(code)
                                 self.n_categories_user_ratings[k][user_id][value] += 1
-                                # for the co-occurrence matrix is not necessary to do the same for item, but better do it
+                                # for the co-occurrence matrix is not necessary to do the same for item,
+                                #       but better do it
                                 # in case we want to compute similarities etc using categories
                                 self.tot_categories_item_ratings[k][value][user_id] += int(code)
         else:
             self.insert_item(item_id=item_id)
         if not only_info:
-            self.insert_item_action(user_id=user_id, item_id=item_id, code=code)
+            if user_id in self.users_ratings_tbl:
+                self.users_ratings_tbl[user_id][item_id] = code
+            else:
+                self.users_ratings_tbl[user_id] = {item_id: code}
 
     def get_tot_categories_user_ratings(self):
         return self.tot_categories_user_ratings
@@ -285,33 +189,36 @@ class Database(DALBase, Singleton):
     def get_tot_categories_item_ratings(self):
         return self.tot_categories_item_ratings
 
-    def get_n_categories_user_ratings(self):
-        return self.n_categories_user_ratings
+    def get_categories_ratings(self):
+        return self.categories_ratings
 
     @observable
     def remove_item_action(self, user_id, item_id):
-        """
-        remove an item rating from datastore
-
-        :param user_id: user id
-        :param item_id: item id
-        :return: True if the operation was successfully executed or it does not exists, otherwise return False
-        """
         try:
             del self.users_ratings_tbl[user_id][item_id]
         except KeyError:
             return False
         return True
 
+    def get_info_used(self):
+        return self.info_used
+
+    def set_info_used(self, info_used):
+        self.info_used.update(info_used)
+        return True
+
+    def remove_info_used(self, info_used=None):
+        if info_used:
+            try:
+                self.info_used.remove(info_used)
+            except KeyError:
+                return False
+        else:
+            self.info_used = set()
+        return False
+
     @observable
     def remove_social_action(self, user_id, user_id_to):
-        """
-        remove an user social action from datastore
-
-        :param user_id: user id
-        :param user_id_to: user id
-        :return: True if the operation was successfully executed or it does not exists, otherwise return False
-        """
         try:
             del self.users_social_tbl[user_id][user_id_to]
         except KeyError:
@@ -381,11 +288,6 @@ class Database(DALBase, Singleton):
         return True
 
     def get_user_count(self):
-        """
-        count the number of users present in ratings table
-
-        :return: the number of users
-        """
         try:
             tot_users = len(self.users_ratings_tbl)
         except:
@@ -393,11 +295,6 @@ class Database(DALBase, Singleton):
         return tot_users
 
     def get_items_count(self):
-        """
-        count items
-
-        :return: the number of items
-        """
         try:
             tot_items = len(self.items_tbl)
         except:
@@ -405,10 +302,6 @@ class Database(DALBase, Singleton):
         return tot_items
 
     def get_social_count(self):
-        """
-        count social
-        :return: number of social actions
-        """
         tot_social = 0
         try:
             for user in self.users_social_tbl:
@@ -418,54 +311,29 @@ class Database(DALBase, Singleton):
         return tot_social
 
     def get_item_ratings_iterator(self):
-        """
-        return an iterator on item ratings for each user:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-
-        :return: an iterator on users ratings
-        """
         return self.users_ratings_tbl.iteritems()
 
     def get_items_iterator(self):
-        """
-        return an iterator on items
-
-        :return: an iterator on items
-        """
         return self.items_tbl.iteritems()
 
     def get_social_iterator(self):
-        """
-        {user: {user: rating, user:rating, ...}}
-        :return: iterator on user's social activity
-        """
         for user in self.users_social_tbl:
             yield {user: self.users_social_tbl[user]}
 
     @observable
     def reset(self):
-        """
-        reset the datastore
-
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         self.items_tbl = {}
         self.users_ratings_tbl = {}
         self.users_recomm_tbl = {}
         self.users_social_tbl = {}
+        self.info_used = set()
+
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
         self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
         return True
 
     def serialize(self, filepath):
-        """
-        dump the datastore on file
-
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         r_value = True
         # Write chunks of text data
         try:
@@ -476,8 +344,9 @@ class Database(DALBase, Singleton):
                                      'user_social': self.users_social_tbl,
                                      'tot_categories_user_ratings': self.tot_categories_user_ratings,
                                      'tot_categories_item_ratings': self.tot_categories_item_ratings,
-                                     'n_categories_user_ratings': self.n_categories_user_ratings
-                }
+                                     'n_categories_user_ratings': self.n_categories_user_ratings,
+                                     'info_used': self.info_used
+                                     }
                 pickle.dump(data_to_serialize, f)
         except:
             r_value = False
@@ -487,11 +356,6 @@ class Database(DALBase, Singleton):
 
     @observable
     def restore(self, filepath):
-        """
-        restore the datastore from file
-
-        :return: True if the operation was successfully executed, otherwise return False
-        """
         r_value = True
         # Write chunks of text data
 
@@ -500,6 +364,7 @@ class Database(DALBase, Singleton):
         self.users_ratings_tbl = {}  # table with users rating
         self.users_recomm_tbl = {}  # table with recommendations
         self.users_social_tbl = {}  # table with action user-user
+        self.info_used = set()
 
         self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
         self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
@@ -515,6 +380,7 @@ class Database(DALBase, Singleton):
                 self.tot_categories_user_ratings = data_from_file['tot_categories_user_ratings']
                 self.tot_categories_item_ratings = data_from_file['tot_categories_item_ratings']
                 self.n_categories_user_ratings = data_from_file['n_categories_user_ratings']
+                self.info_used = data_from_file['info_used']
         except:
             r_value = False
             print >> sys.stderr, ("Error: unable to load data from file: %d" % (__base_error_code__ + 2))

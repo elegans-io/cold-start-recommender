@@ -151,7 +151,7 @@ class DALBase(Observable):  # interface of the data abstraction layer
 
     @abc.abstractmethod
     @observable
-    def insert_item_action(self, user_id, item_id, code=3.0):
+    def insert_item_action(self, user_id, item_id, code=3.0, item_meaningful_info=None, only_info=False):
         """
         insert a new item code on datastore, for each user a list of ratings will be mantained:
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
@@ -175,13 +175,37 @@ class DALBase(Observable):  # interface of the data abstraction layer
         """
         raise NotImplementedError
 
+    def get_info_used(self):
+        """
+        get the categories used
+
+        :return: a set with the name of categories used
+        """
+        raise NotImplementedError
+
+    def set_info_used(self, info_used):
+        """
+
+        :param info_used: the new category to use
+        :return:
+        """
+        raise NotImplementedError
+
+    def remove_info_used(self, info_used=None):
+        """
+
+        :param info_used: the category to be deleted, if None, reset all catefory
+        :return:
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     @observable
-    def remove_social_action(self, user_id, iser_id_to):
+    def remove_social_action(self, user_id, user_id_to):
         """
         remove an item rating from datastore
         :param user_id: user id
-        :param item_id: item id
+        :param user_id_to: user id destination of the action
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
         """
         raise NotImplementedError
