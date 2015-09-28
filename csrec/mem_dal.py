@@ -70,9 +70,8 @@ class Database(DALBase, Singleton):
 
     def get_items(self, item_id=None):
         if item_id is not None:
-            try:
-                items = self.items_tbl.get(item_id)
-            except KeyError:
+            items = self.items_tbl[item_id]
+            if not items:
                 return {}
             else:
                 return {item_id: items}
@@ -98,9 +97,8 @@ class Database(DALBase, Singleton):
 
     def get_social_actions(self, user_id=None):
         if user_id is not None:
-            try:
-                social_actions = self.users_social_tbl.get(user_id)
-            except KeyError:
+            social_actions = self.users_social_tbl[user_id]
+            if not social_actions:
                 return {}
             else:
                 return {user_id: social_actions}
@@ -178,9 +176,8 @@ class Database(DALBase, Singleton):
 
     def get_item_actions(self, user_id=None):
         if user_id is not None:
-            try:
-                item_actions = self.users_ratings_tbl.get(user_id)
-            except KeyError:
+            item_actions = self.users_ratings_tbl[user_id]
+            if not item_actions:
                 return {}
             else:
                 return {user_id: item_actions}
@@ -192,9 +189,8 @@ class Database(DALBase, Singleton):
 
     def get_item_ratings(self, item_id=None):
         if item_id is not None:
-            try:
-                users_actions = self.items_ratings_tbl.get(item_id)
-            except KeyError:
+            users_actions = self.items_ratings_tbl[item_id]
+            if users_actions:
                 return {}
             else:
                 return {item_id: users_actions}
@@ -220,11 +216,11 @@ class Database(DALBase, Singleton):
     def reconcile_user(self, old_user_id, new_user_id):
         #  verifying that both users exists
         if old_user_id not in self.users_ratings_tbl:
-            e_message = "unable old user id does not exists: %s" % str(old_user_id)
+            e_message = "unable to reconcile old user id does not exists: %s" % str(old_user_id)
             raise MergeEntitiesException(e_message)
 
         if new_user_id not in self.users_ratings_tbl:
-            e_message = "unable new  user id does not exists: %s" % str(new_user_id)
+            e_message = "unable to reconcile new user id does not exists: %s" % str(new_user_id)
             raise MergeEntitiesException(e_message)
 
         # updating ratings
