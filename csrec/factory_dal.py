@@ -15,8 +15,7 @@ class Dal:
         """
 
         implemented_dal = {
-            'mem',
-            'mongo'
+            'mem'
         }
         return implemented_dal
 
@@ -25,16 +24,13 @@ class Dal:
         """
         get a list of supported parameters by a dal implementation and their description
 
-        :param name: the name of any DAL implementation i.e. mongo
+        :param name: the name of any DAL implementation i.e. mem
         :return: the dictionary with the supported parameters and the description
         """
 
         if name == 'mem':  # in memory implementation of dal
             import csrec.mem_dal as mem_dal
             return mem_dal.Database.get_init_parameters_description()
-        elif name == 'mongo':  # mongodb implementation of dal
-            import csrec.mongo_dal as mongo_dal
-            return mongo_dal.Database.get_init_parameters_description()
         else:
             raise NotImplementedError
 
@@ -45,7 +41,7 @@ class Dal:
 
         exception: raise a InitializationError if any error occur
 
-        :param name: the name of any DAL implementation i.e. mongo
+        :param name: the name of any DAL implementation i.e. mem
         :param params: the dictionary of the parameters supported by the implementation. Refer to the
             help of the init process of the specific instance for the supported parameters.
         :return: an instance of the DAL implementation if the initialization was successfully executed
@@ -55,12 +51,6 @@ class Dal:
             import csrec.mem_dal as mem_dal
             try:
                 dal_instance = mem_dal.Database()
-            except InitializationException as exc:
-                raise InitializationException("unable to initialize: " % name)
-        elif name == 'mongo':  # mongodb implementation of dal
-            import csrec.mongo_dal as mongo_dal
-            try:
-                dal_instance = mongo_dal.Database()
             except InitializationException as exc:
                 raise InitializationException("unable to initialize: " % name)
         else:
