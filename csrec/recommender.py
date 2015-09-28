@@ -24,11 +24,6 @@ class Recommender(Singleton):
         self.db = db
 
         # registering callback functions for datastore events
-        #self.db.register(self.db.insert_item, self.on_insert_item)
-        #self.db.register(self.db.remove_item, self.on_remove_item)
-        #self.db.register(self.db.insert_item_action_recommender, self.insert_item_action_recommender)
-        #self.db.register(self.db.remove_item_action, self.on_remove_item_rating)
-        #self.db.register(self.db.reconcile_user, self.on_reconcile_user)
         self.db.register(self.db.serialize, self.on_serialize)
         self.db.register(self.db.restore, self.on_restore)
 
@@ -57,7 +52,7 @@ class Recommender(Singleton):
             self.logger.error("[on_restore] restore from serialized data fail: ", filepath)
 
         self._create_cooccurrence()
-        r_it = self.db.get_item_ratings_iterator()
+        r_it = self.db.get_item_actions_iterator()
         for item in r_it:
             user_id = item[0]
             ratings = item[1]
@@ -69,7 +64,7 @@ class Recommender(Singleton):
         Create or update the co-occurrence matrix
         :return:
         """
-        all_ratings = self.db.get_all_users_item_actions()
+        all_ratings = self.db.get_item_actions()
         df = pd.DataFrame(all_ratings).fillna(0).astype(int)  # convert dictionary to pandas dataframe
 
         #calculate co-occurrence matrix
@@ -100,10 +95,10 @@ class Recommender(Singleton):
         As per name, get self.
         :return: list of popular items, 0=most popular
         """
-        df_item = pd.DataFrame(self.db.get_all_users_item_actions()).T.fillna(0).astype(int).sum()
+        df_item = pd.DataFrame(self.db.get_item_actions()).T.fillna(0).astype(int).sum()
         df_item.sort(ascending=False)
         pop_items = list(df_item.index)
-        all_items = set(self.db.get_all_items().keys())
+        all_items = set(self.db.get_items().keys())
         self.items_by_popularity = (pop_items + list(all_items - set(pop_items)))
 
     def get_recommendations(self, user_id, max_recs=50, fast=False, algorithm='item_based'):
@@ -129,10 +124,10 @@ class Recommender(Singleton):
         user_has_rated_items = False  # has user rated some items?
         rated_infos = []  # user has rated the category (e.g. the category "author" etc)
         df_user = None
-        if self.db.get_user_item_actions(user_id):  # compute item-based rec only if user has rated smt
+        if self.db.get_item_actions(user_id=user_id):  # compute item-based rec only if user has rated smt
             user_has_rated_items = True
             # Just take user_id for the user vector
-            df_user = pd.DataFrame(self.db.get_all_users_item_actions()).fillna(0).astype(int)[[user_id]]
+            df_user = pd.DataFrame(self.db.get_item_actions()).fillna(0).astype(int)[[user_id]]
         info_used = self.db.get_info_used()
         if len(info_used) > 0:
             for i in info_used:
@@ -210,7 +205,7 @@ class Recommender(Singleton):
                 for item_id, score in rec.iteritems():
                     #print("DEBUG [get_recommendations] rec_item_id: %s", k)
                     try:
-                        item = self.db.get_item(item_id=item_id)
+                        item = self.db.get_items(item_id=item_id)
                         item_info_value = item.get(cat, "")
 
                         #print("DEBUG get_recommendations. item value for %s: %s", cat, item_info_value)

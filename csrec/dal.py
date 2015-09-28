@@ -5,7 +5,7 @@ import abc
 
 from csrec.tools.observable import Observable
 from csrec.tools.observable import observable
-
+from csrec.exceptions import *
 
 class DALBase(Observable):  # interface of the data abstraction layer
     __metaclass__ = abc.ABCMeta
@@ -17,8 +17,10 @@ class DALBase(Observable):  # interface of the data abstraction layer
     def init(self, **params):
         """
         initialization method
+
+        exception: raise an InitializationException if any error occur
+
         :param params: dictionary of parameters
-        :return: True if the class was successfully initialized, otherwise return False
         """
         raise NotImplementedError
 
@@ -36,51 +38,13 @@ class DALBase(Observable):  # interface of the data abstraction layer
         raise NotImplementedError
 
     @abc.abstractmethod
-    def insert_or_update_recomms(self, user_id, recommendations):
-        """
-        insert a new recommendation for a user
-        :param user_id: user id
-        :param recommendations: the recommendations for the user
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-        :return: True if the operation was successfully executed, otherwise return False
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def remove_recomms(self, item_id):
-        """
-        remove an item from datastore
-        :param item_id: item id
-        :return: True if the operation was successfully executed, otherwise return False
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def reset_recomms(self):
-        """
-        remove all recommendations from datastore
-        :param item_id: item id
-        :return: True if the operation was successfully executed, otherwise return False
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_user_recomms(self, user_id):
-        """
-        retrieve the list of recommendations for the user
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-        :param user_id: user id
-        :return: the recommendations for a user, if the user does not exists returns an empty dictionary
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     @observable
     def insert_item(self, item_id, attributes):
         """
-        insert a new item on datastore
+        insert a new item on datastore, if the item already exists replace it
+
+        exception: raise an InsertException if any error occur
+
         :param item_id: item id
         :param attributes: a dictionary with item attributes e.g.
             {"author": "AA. VV.",
@@ -88,24 +52,30 @@ class DALBase(Observable):  # interface of the data abstraction layer
                 "subcategory":["splatter", "zombies"],
                 ...
             }
-        :return: True if the operation was successfully executed, otherwise return False
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     @observable
-    def remove_item(self, item_id):
+    def remove_item(self, item_id=None):
         """
         remove an item from datastore
-        :param item_id: item id
-        :return:
+
+        exception: raise a DeleteException if any error occur
+
+        :param item_id: the item id to delete, if None remove all items
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_all_items(self):
+    def get_items(self, item_id=None):
         """
-        return a dictionary with all items:
+        get a dictionary of items
+
+        exception: raise a GetException if any error occur
+
+        :param item_id: the item id to get, if None get all items
+        :return: a dictionary with one or more items:
             item_id0 : {"author": "AA. VV.",
                 "category":"horror",
                 "subcategory":["splatter", "zombies"],
@@ -117,21 +87,17 @@ class DALBase(Observable):  # interface of the data abstraction layer
                 "subcategory":["splatter", "zombies"],
                 ...
             }
-        :return: a dictionary with ratings
+
+            an empty dictionary will be returned if the item was not found
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_item(self, item_id):
+    def get_items_iterator(self):
         """
-        return an item by ID
-            {"author": "AA. VV.",
-                "category":"horror",
-                "subcategory":["splatter", "zombies"],
-                ...
-            }
-        :param item_id: user id
-        :return: the item record
+        an iterator on items
+
+        :return: an iterator on items
         """
         raise NotImplementedError
 
@@ -142,10 +108,40 @@ class DALBase(Observable):  # interface of the data abstraction layer
             user0: { 'user_0':3.0, ..., 'user_N':5.0}
             ...
             userN: { 'user_0':3.0, ..., 'user_N':5.0}
-        :param user_id: user id
-        :param user_id_to: user id
+
+        exception: raise an InsertException if any error occur
+
+        :param user_id: user id who make the action
+        :param user_id_to: the user id destination of the action
         :param code: the code, default value is 3.0
-        :return: True if the operation was successfully executed, otherwise return False
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    @observable
+    def remove_social_action(self, user_id, user_id_to):
+        """
+        remove a social action from datastore
+
+        exception: raise a DeleteException if any error occur
+
+        :param user_id: user id who make the action
+        :param user_id_to: the user id destination of the action
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_social_actions(self, user_id=None):
+        """
+        get the social actions
+
+        exception: raise a GetException if any error occur
+
+        :param user_id: user id, if None, return all social actions
+        :return: a dictionary social actions performed BY users:
+            user0: { 'user_1':3.0, ..., 'user_M':5.0}
+            ...
+            userN: { 'user_0':3.0, ..., 'user_M':5.0}
         """
         raise NotImplementedError
 
@@ -157,10 +153,12 @@ class DALBase(Observable):  # interface of the data abstraction layer
             user0: { 'item_0':3.0, ..., 'item_N':5.0}
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
+
+        exception: raise an InsertException if any error occur
+
         :param user_id: user id
         :param item_id: item id
         :param code: the code, default value is 3.0
-        :return: True if the operation was successfully executed, otherwise return False
         """
         raise NotImplementedError
 
@@ -168,10 +166,56 @@ class DALBase(Observable):  # interface of the data abstraction layer
     @observable
     def remove_item_action(self, user_id, item_id):
         """
-        remove an item rating from datastore
+        remove a rating made by a user from the datastore
+
+        exception: raise a DeleteException if any error occur
+
         :param user_id: user id
         :param item_id: item id
         :return: True if the operation was successfully executed or it does not exists, otherwise return False
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_item_actions(self, user_id=None):
+        """
+        get a dictionary with user's actions
+
+        exception: raise a GetException if any error occur
+
+        :param user_id: user id, if None returns actions for all users
+        :return: a dictionary with all ratings:
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            ...
+            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_item_actions_iterator(self):
+        """
+        get an iterator on item actions
+
+        exception: raise a GetException if any error occur
+
+        :return: an iterator on item ratings for each user:
+            user0: { 'item_0':3.0, ..., 'item_N':5.0}
+            ...
+            userN: { 'item_0':3.0, ..., 'item_N':5.0}
+        """
+        raise NotImplementedError
+
+    def get_item_ratings(self, item_id=None):
+        """
+        get ratings on items made by users
+
+        exception: raise a GetException if any error occur
+
+        :param item_id: an item id, if None returns the ratings for all items
+        :return: a dictionary with ratings for each item
+            item0: { 'user_0':3.0, ..., 'user_N':5.0}
+            ...
+            itemN: { 'user_0':3.0, ..., 'user_N':5.0}
         """
         raise NotImplementedError
 
@@ -179,84 +223,29 @@ class DALBase(Observable):  # interface of the data abstraction layer
         """
         get the categories used
 
+        exception: raise a GetException if any error occur
+
         :return: a set with the name of categories used
         """
         raise NotImplementedError
 
     def set_info_used(self, info_used):
         """
+        insert a new category
+
+        exception: raise an InsertException if any error occur
 
         :param info_used: the new category to use
-        :return:
         """
         raise NotImplementedError
 
     def remove_info_used(self, info_used=None):
         """
+        remove a category from the datastore
 
-        :param info_used: the category to be deleted, if None, reset all catefory
-        :return:
-        """
-        raise NotImplementedError
+        exception: raise a DeleteException if any error occur
 
-    @abc.abstractmethod
-    @observable
-    def remove_social_action(self, user_id, user_id_to):
-        """
-        remove an item rating from datastore
-        :param user_id: user id
-        :param user_id_to: user id destination of the action
-        :return: True if the operation was successfully executed or it does not exists, otherwise return False
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_all_users_item_actions(self):
-        """
-        return a dictionary with all ratings:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-        :return: a dictionary with ratings
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_user_item_actions(self, user_id):
-        """
-        retrieve the list of ratings made by the user
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-        :param user_id: user id
-        :return: the ratings of a user, if the user does not exists returns an empty dictionary
-        """
-        raise NotImplementedError
-
-    def get_users_actions_on_item(self, item_id):
-        """
-        get actions on item made by users
-
-        :param item_id
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_all_social_actions(self):
-        """
-        return a dictionary with all social actions performed BY each user:
-            user0: { 'user_1':3.0, ..., 'user_M':5.0}
-            ...
-            userN: { 'user_0':3.0, ..., 'user_M':5.0}
-        :return: a dictionary with action codes
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_user_social_actions(self, user_id):
-        """
-        retrieve the list of ratings made by the user
-            user0: { 'user_1': 3.0, ..., 'user_M': 5.0}
-        :param user_id: user id
-        :return: the social action performed by a user, if the user does not exists returns an empty dictionary
+        :param info_used: the category to be deleted, if None, reset all categories
         """
         raise NotImplementedError
 
@@ -266,16 +255,21 @@ class DALBase(Observable):  # interface of the data abstraction layer
         """
         merge two users under the new user id, old user id will be removed
         for each item rated more than once, those rated by new_user_id will be kept
-        :param old_user_id: old user id
-        :param new_user_id: new user id
-        :return: all the ratings of the user
+
+        exception: raise a MergeEntitiesException if any error occur
+
+        :param old_user_id: old user id, raise an error if does not exists
+        :param new_user_id: new user id, raise an error if does not exists
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_user_count(self):
         """
-        count the number of users present in ratings table
+        get the number of users who rated items
+
+        exception: raise a GetException if any error occur
+
         :return: the number of users
         """
         raise NotImplementedError
@@ -283,27 +277,11 @@ class DALBase(Observable):  # interface of the data abstraction layer
     @abc.abstractmethod
     def get_items_count(self):
         """
-        count items
+        get the number of items
+
+        exception: raise a GetException if any error occur
+
         :return: the number of items
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_item_ratings_iterator(self):
-        """
-        return an iterator on item ratings for each user:
-            user0: { 'item_0':3.0, ..., 'item_N':5.0}
-            ...
-            userN: { 'item_0':3.0, ..., 'item_N':5.0}
-        :return: an iterator on users ratings
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_items_iterator(self):
-        """
-        return an iterator on items
-        :return: an iterator on items
         """
         raise NotImplementedError
 
@@ -311,8 +289,9 @@ class DALBase(Observable):  # interface of the data abstraction layer
     @observable
     def reset(self):
         """
-        reset the datastore
-        :return: True if the operation was successfully executed, otherwise return False
+        reset all data into the datastore
+
+        exception: raise a DeleteException if any error occur
         """
         raise NotImplementedError
 
@@ -321,7 +300,8 @@ class DALBase(Observable):  # interface of the data abstraction layer
     def serialize(self, filepath):
         """
         dump the datastore on file
-        :return: True if the operation was successfully executed, otherwise return False
+
+        exception: raise a SerializeException if any error occur
         """
         raise NotImplementedError
 
@@ -330,6 +310,7 @@ class DALBase(Observable):  # interface of the data abstraction layer
     def restore(self, filepath):
         """
         restore the datastore from file
-        :return: True if the operation was successfully executed, otherwise return False
+
+        exception: raise a RestoreException if any error occur
         """
         raise NotImplementedError

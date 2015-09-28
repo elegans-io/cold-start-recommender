@@ -1,5 +1,5 @@
-__author__ = "Angelo Leto"
-__email__ = "angelo@your.md"
+__author__ = "elegans.io Ltd"
+__email__ = "info@elegans.io"
 
 
 class DatabaseOperationException(Exception):
@@ -46,9 +46,31 @@ class InsertException(Exception):
         return repr(self.value)
 
 
-class UpdateException(Exception):
+class SerializeException(Exception):
     """
-    Exception used to report problems updating data on db
+    Exception used to report problems during data serialization
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class RestoreException(Exception):
+    """
+    Exception used to report problems restoring data on db from a serialized archive
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class MergeEntitiesException(Exception):
+    """
+    Exception used to report problems merging data on db, e.g. user reconciliation
     """
     def __init__(self, value):
         self.value = value

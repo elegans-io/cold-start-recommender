@@ -30,9 +30,7 @@ class InsertItems(webapp2.RequestHandler):
     """
     Update (or insert) item. The unique_id must be given as param
     e.g.:
-    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, \
-        { "_id" : "Book1", "type": "male", "category" : "hardcore"}]' \
-        'http://localhost:8081/insertitems?unique_id=_id'
+    curl -X POST -H "Content-Type: application/json" -d '[{ "_id" : "123", "type": "lady", "category" : "romance"}, { "_id" : "Book1", "type": "male", "category" : "hardcore"}]' 'http://localhost:8081/insertitems?unique_id=_id'
     """
     def post(self):
         items = json.loads(self.request.body)
@@ -55,7 +53,7 @@ class ItemAction(webapp2.RequestHandler):
             only_info = True
         else:
             only_info = False
-        db.insert_item_action_recommender(
+        db.insert_item_action(
             user_id=self.request.get('user'),
             item_id=self.request.get('item'),
             code=float(self.request.get('code')),
@@ -83,7 +81,7 @@ class GetItem(webapp2.RequestHandler):
     """
     def get(self):
         item_id = self.request.get('id')
-        item_record = db.get_item(item_id=item_id)
+        item_record = db.get_items(item_id=item_id)
         self.response.write(item_record)
 
 
@@ -117,7 +115,7 @@ class InfoUser(webapp2.RequestHandler):
     """
     def get(self):
         user_id = self.request.get('user')
-        user = db.get_user_item_actions(user_id=user_id)
+        user = db.get_item_actions(user_id=user_id)
         self.response.write(user)
 
 
