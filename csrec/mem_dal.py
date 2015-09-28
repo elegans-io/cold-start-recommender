@@ -179,11 +179,11 @@ class Database(DALBase, Singleton):
     def get_item_actions(self, user_id=None):
         if user_id is not None:
             try:
-                social_actions = self.users_ratings_tbl.get(user_id)
+                item_actions = self.users_ratings_tbl.get(user_id)
             except KeyError:
                 return {}
             else:
-                return {user_id: social_actions}
+                return {user_id: item_actions}
         else:
             return self.users_ratings_tbl
 
