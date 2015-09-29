@@ -122,7 +122,7 @@ class Database(DALBase, Singleton):
         if item:
             # Do categories only if the item is stored
             if len(item_meaningful_info) > 0:
-                for k, v in item.items():
+                for k, v in item[item_id].items():
                     if k in item_meaningful_info:
                         # Some items' attributes are lists (e.g. tags: [])
                         # or, worse, string which can represent lists...
@@ -135,6 +135,7 @@ class Database(DALBase, Singleton):
                             values = [v]
                         else:
                             values = v
+
                         self.set_info_used(k)
                         # we cannot set the rating, because we want to keep the info
                         # that a user has read N books of, say, the same author,
@@ -221,6 +222,10 @@ class Database(DALBase, Singleton):
 
         if new_user_id not in self.users_ratings_tbl:
             e_message = "unable to reconcile new user id does not exists: %s" % str(new_user_id)
+            raise MergeEntitiesException(e_message)
+
+        if old_user_id == new_user_id:
+            e_message = "users to be reconcile are the same: %s" % str(new_user_id)
             raise MergeEntitiesException(e_message)
 
         # updating ratings
