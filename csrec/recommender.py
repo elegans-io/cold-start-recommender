@@ -111,7 +111,7 @@ class Recommender(Singleton):
             are given as score[last recommended]*index[last recommended]/n
             where n is the position in the list.
             - Recommended items above receive a further score according to categories
-        :param user_id: the user id as in the mongo collection 'users'
+        :param user_id: the user id as in the collection of 'users'
         :param max_recs: number of recommended items to be returned
         :param fast: Compute the co-occurrence matrix only if it is one hour old or
                      if matrix and user vector have different dimension

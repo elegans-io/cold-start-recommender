@@ -253,6 +253,25 @@ class Database(DALBase, Singleton):
         old_social_dict.update(new_social_dict)
         self.users_social_tbl[new_user_id] = old_social_dict
 
+        for category in self.tot_categories_user_ratings:
+            if old_user_id in self.tot_categories_user_ratings[category]:
+                tot_curr_cat_values = self.tot_categories_user_ratings[category][old_user_id]
+                del self.tot_categories_user_ratings[category][old_user_id]
+                self.tot_categories_user_ratings[category][new_user_id] = tot_curr_cat_values
+
+        for category in self.n_categories_user_ratings:
+            if old_user_id in self.n_categories_user_ratings[category]:
+                n_curr_cat_values = self.n_categories_user_ratings[category][old_user_id]
+                del self.n_categories_user_ratings[category][old_user_id]
+                self.n_categories_user_ratings[category][new_user_id] = n_curr_cat_values
+
+        for category in self.tot_categories_item_ratings:
+            for v in self.tot_categories_item_ratings[category]:
+                if old_user_id in self.tot_categories_item_ratings[category][v]:
+                    tot_curr_cat_item_values = self.tot_categories_item_ratings[category][v][old_user_id]
+                    del self.tot_categories_item_ratings[category][v][old_user_id]
+                    self.tot_categories_item_ratings[category][v][new_user_id] = tot_curr_cat_item_values
+
     def get_user_count(self):
         return len(self.users_ratings_tbl)
 

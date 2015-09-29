@@ -17,8 +17,7 @@ setup(name='cold-start-recommender',
       # Install these using the following syntax:
       # $ pip install -e .[webapp, mongo]
       extras_require={
-          'webapp': ['webapp2', 'paste'],
-          'mongo': ['pymongo'],
+          'webapp': ['webapp2', 'paste']
       },
       data_files=[('config', ['config/csrec.config'])],
       )
