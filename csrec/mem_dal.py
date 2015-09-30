@@ -262,13 +262,17 @@ class Database(DALBase, Singleton):
             if old_user_id in self.tot_categories_user_ratings[category]:
                 tot_curr_cat_values = self.tot_categories_user_ratings[category][old_user_id]
                 del self.tot_categories_user_ratings[category][old_user_id]
-                self.tot_categories_user_ratings[category][new_user_id] = tot_curr_cat_values
+                if new_user_id not in self.tot_categories_user_ratings[category]:
+                    self.tot_categories_user_ratings[category][new_user_id] = defaultdict(int)
+                self.tot_categories_user_ratings[category][new_user_id].update(tot_curr_cat_values)
 
         for category in self.n_categories_user_ratings:
             if old_user_id in self.n_categories_user_ratings[category]:
                 n_curr_cat_values = self.n_categories_user_ratings[category][old_user_id]
                 del self.n_categories_user_ratings[category][old_user_id]
-                self.n_categories_user_ratings[category][new_user_id] = n_curr_cat_values
+                if new_user_id not in self.n_categories_user_ratings[category]:
+                    self.n_categories_user_ratings[category][new_user_id] = defaultdict(int)
+                self.n_categories_user_ratings[category][new_user_id].update(n_curr_cat_values)
 
         for category in self.tot_categories_item_ratings:
             for v in self.tot_categories_item_ratings[category]:
@@ -349,5 +353,5 @@ class Database(DALBase, Singleton):
     def get_tot_categories_item_ratings(self):
         return self.tot_categories_item_ratings
 
-    def get_categories_ratings(self):
-        return self.categories_ratings
+    def get_n_categories_user_ratings(self):
+        return self.n_categories_user_ratings

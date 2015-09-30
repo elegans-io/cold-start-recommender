@@ -79,9 +79,9 @@ class Recommender(Singleton):
 
         info_used = self.db.get_info_used()
         if len(info_used) > 0:
-
+            tot_categories_item_ratings = self.db.get_tot_categories_item_ratings()
             for i in info_used:
-                df_tot_cat_item[i] = pd.DataFrame(self.db.get_tot_categories_item_ratings()[i]).fillna(0).astype(int)
+                df_tot_cat_item[i] = pd.DataFrame(tot_categories_item_ratings.get(i)).fillna(0).astype(int)
 
             for i in info_used:
                 if type(df_tot_cat_item.get(i)) == pd.DataFrame:
@@ -130,13 +130,15 @@ class Recommender(Singleton):
             df_user = pd.DataFrame(self.db.get_item_actions()).fillna(0).astype(int)[[user_id]]
         info_used = self.db.get_info_used()
         if len(info_used) > 0:
+            tot_categories_user_ratings = self.db.get_tot_categories_user_ratings()
+            n_categories_user_ratings = self.db.get_n_categories_user_ratings()
             for i in info_used:
-                if self.db.get_tot_categories_user_ratings()[i].get(user_id):
+                if i in tot_categories_user_ratings and user_id in tot_categories_user_ratings[i]:
                     rated_infos.append(i)
                     df_tot_cat_user[i] =\
-                        pd.DataFrame(self.db.get_tot_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
+                        pd.DataFrame(tot_categories_user_ratings.get(i)).fillna(0).astype(int)[[user_id]]
                     df_n_cat_user[i] =\
-                        pd.DataFrame(self.db.get_n_categories_user_ratings()[i]).fillna(0).astype(int)[[user_id]]
+                        pd.DataFrame(n_categories_user_ratings.get(i)).fillna(0).astype(int)[[user_id]]
 
         if user_has_rated_items:
             if not fast or (time() - self.cooccurrence_updated > 1800):
