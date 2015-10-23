@@ -137,6 +137,7 @@ class Database(DALBase, Singleton):
                             values = v
 
                         self.set_info_used(k)
+
                         # we cannot set the rating, because we want to keep the info
                         # that a user has read N books of, say, the same author,
                         # category etc.
@@ -202,7 +203,7 @@ class Database(DALBase, Singleton):
         return self.info_used
 
     def set_info_used(self, info_used):
-        self.info_used.update(info_used)
+        self.info_used.add(info_used)
 
     def remove_info_used(self, info_used=None):
         if info_used:
