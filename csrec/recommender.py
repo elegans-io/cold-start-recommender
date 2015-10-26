@@ -5,23 +5,23 @@ from time import time
 import logging
 import json
 from csrec.tools.singleton import Singleton
-
+from csrec import factory_dal
 
 class Recommender(Singleton):
     """
     Cold Start Recommender
     """
-    def __init__(self, db, max_rating=5, log_level=logging.DEBUG):
+    def __init__(self, dal_name='mem', dal_params={}, max_rating=5, log_level=logging.INFO):
         # Logger initialization
         self.logger = logging.getLogger("csrc")
         self.logger.setLevel(log_level)
         ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
+        ch.setLevel(log_level)
         self.logger.addHandler(ch)
         self.logger.debug("============ Logger initialized ================")
 
         # initialization of datastore attribute
-        self.db = db
+        self.db = factory_dal.Dal.get_dal(name=dal_name, **dal_params)  # instantiate an in memory database
 
         # registering callback functions for datastore events
         self.db.register(self.db.serialize, self.on_serialize)
@@ -67,14 +67,14 @@ class Recommender(Singleton):
         all_ratings = self.db.get_item_actions()
         df = pd.DataFrame(all_ratings).fillna(0).astype(int)  # convert dictionary to pandas dataframe
 
-        #calculate co-occurrence matrix
+        # calculate co-occurrence matrix
         # sometime will print the warning: "RuntimeWarning: invalid value encountered in true_divide"
         # use np.seterr(divide='ignore', invalid='ignore') to suppress this warning
-        df_items = (df / df).replace(np.inf, 0).replace(np.nan,0) #calculate co-occurrence matrix and normalize to 1
+        df_items = (df / df).replace(np.inf, 0).replace(np.nan, 0)  # calculate co-occurrence matrix and normalize to 1
         co_occurrence = df_items.fillna(0).dot(df_items.T)
         self._items_cooccurrence = co_occurrence
 
-        #update co-occurrence matrix for items categories
+        # update co-occurrence matrix for items categories
         df_tot_cat_item = {}
 
         info_used = self.db.get_info_used()
