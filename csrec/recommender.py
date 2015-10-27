@@ -40,7 +40,7 @@ class Recommender(Singleton):
         self.max_rating = max_rating
 
     def on_serialize(self, filepath, return_value):
-        if return_value:
+        if return_value is None or return_value:
             self.last_serialization_time = time()
         else:
             self.logger.error("[on_serialize] data backup failed on file %s, last successful backup at: %f" %
@@ -48,16 +48,10 @@ class Recommender(Singleton):
                                self.last_serialization_time))
 
     def on_restore(self, filepath, return_value):
-        if not return_value:
+        if return_value is not None and not return_value:
             self.logger.error("[on_restore] restore from serialized data fail: ", filepath)
-
-        self._create_cooccurrence()
-        r_it = self.db.get_item_actions_iterator()
-        for item in r_it:
-            user_id = item[0]
-            ratings = item[1]
-            for item_id, rating in ratings.items():
-                self.insert_item_action(user_id=user_id, item_id=item_id, code=rating)
+        else:
+            self._create_cooccurrence()
 
     def _create_cooccurrence(self):
         """

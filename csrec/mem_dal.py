@@ -18,23 +18,35 @@ import json
 from csrec.exceptions import *
 
 
+def _dd_float():
+    return defaultdict(float)
+
+
+def _dd_int():
+    return defaultdict(int)
+
+
+def _dd_dd_int():
+    return defaultdict(_dd_int)
+
+
 class Database(DALBase, Singleton):
     def __init__(self):
         DALBase.__init__(self)
 
         self.__params_dictionary = {}  # abstraction layer initialization parameters
 
-        self.items_tbl = defaultdict(lambda: defaultdict(float))  # table with items
+        self.items_tbl = defaultdict(_dd_float)  # table with items
 
-        self.users_ratings_tbl = defaultdict(lambda: defaultdict(float))  # table with users rating
-        self.items_ratings_tbl = defaultdict(lambda: defaultdict(float))  # table with items rating
+        self.users_ratings_tbl = defaultdict(_dd_float)  # table with users rating
+        self.items_ratings_tbl = defaultdict(_dd_float)  # table with items rating
 
-        self.users_social_tbl = defaultdict(lambda: defaultdict(float))  # table with action user-user
+        self.users_social_tbl = defaultdict(_dd_float)  # table with action user-user
         self.info_used = set()
 
-        self.tot_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # sum of all ratings  (inmemory testing)
-        self.tot_categories_item_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # ditto
-        self.n_categories_user_ratings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # number of ratings  (inmemory testing)
+        self.tot_categories_user_ratings = defaultdict(_dd_dd_int)  # sum of all ratings  (inmemory testing)
+        self.tot_categories_item_ratings = defaultdict(_dd_dd_int)  # ditto
+        self.n_categories_user_ratings = defaultdict(_dd_dd_int)  # number of ratings  (inmemory testing)
 
     def init(self, **params):
         if not params:
@@ -312,6 +324,7 @@ class Database(DALBase, Singleton):
         self.n_categories_user_ratings.clear()
         self.info_used.clear()
 
+    @observable
     def serialize(self, filepath):
         # Write chunks of text data
         try:
@@ -338,13 +351,13 @@ class Database(DALBase, Singleton):
                 data_from_file = pickle.load(f)
                 self.items_tbl = data_from_file['items']
                 self.users_ratings_tbl = data_from_file['users_ratings']
-                self.items_ratings_tbl = data_from_file['items_recomms']
+                self.items_ratings_tbl = data_from_file['items_ratings']
                 self.users_social_tbl = data_from_file['user_social']
                 self.tot_categories_user_ratings = data_from_file['tot_categories_user_ratings']
                 self.tot_categories_item_ratings = data_from_file['tot_categories_item_ratings']
                 self.n_categories_user_ratings = data_from_file['n_categories_user_ratings']
                 self.info_used = data_from_file['info_used']
-        except:
+        except Exception as e:
             e_message = "unable to load data from file: %d" % (__base_error_code__ + 2)
             raise RestoreException(e_message + " : " + e.message)
 
