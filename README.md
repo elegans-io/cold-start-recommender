@@ -42,10 +42,8 @@ library.
 A simple script
 ---------------
 
-    from csrec import Recommender, DALFactory
-    
-    db = DALFactory(name='mem')  # instantiate an in memory database
-	engine = Recommender(db=db)
+    from csrec import Recommender
+	engine = Recommender()
 
     # Insert items with their properties (e.g. author, tags...)
     # NB lists can be passed as json-parseable strings
@@ -75,7 +73,6 @@ Dependencies
 
 The following python packages are needed in order to run the recommender:
 
-* unittest
 * pickle
 * pandas
 * numpy
@@ -92,33 +89,7 @@ Features
 Persistence
 -----------
 
-You can use CSRec purely in-memory for testing or with MongoDB, which
-you can install on a tmpfs filesystem created in your RAM (on Linux,
-see
-http://edgystuff.tumblr.com/post/49304254688/how-to-use-mongodb-as-a-pure-in-memory-db-redis-style). If using a RAM partition, please make a replica set!
 
-(Why use a replica set? Because you can have the primary DB in
-memory, and two other secondaries on disk. If the primary goes down,
-you still can use CSRec at lower performances, but without any data
-loss.)
-
-Examples
---------
-
-In memory:
-
-    db = DALFactory(name='mem')  # instantiate an in memory database
-	engine = Recommender(db=db)
-
-Using Mongo:
-
-    params = {
-            'host': 'localhost',
-            'dbname': 'csrec',
-            'replicaset': None
-        }
-    db = DALFactory(name='mongo', params=params)
-	engine = Recommender(db=db)  # ...with MongoDB, collections are created automatically
 
 The Cold Start Problem
 ----------------------
