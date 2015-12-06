@@ -286,6 +286,22 @@ class DALBase(Observable):  # interface of the data abstraction layer
         raise NotImplementedError
 
     @abc.abstractmethod
+    def get_social_count(self):
+        """
+        Get the number of social actions
+        :return: number of social actions
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_social_iterator(self):
+        """
+        iterator over social actions
+        :return: iterator over social actions
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     @observable
     def reset(self):
         """
