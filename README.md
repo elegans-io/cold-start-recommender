@@ -48,22 +48,22 @@ A simple script
     # Insert items with their properties (e.g. author, tags...)
     # NB lists can be passed as json-parseable strings
 
-    engine.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good"]'})
-    engine.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
-    engine.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
-    engine.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
+    engine.db.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good"]'})
+    engine.db.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
+    engine.db.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
+    engine.db.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
 
     # The following lines tell the recommender that user1 likes items 1,2,3, but also "Author A", "B", "Z"
     # and tags "nice", "good" and "fair"
 
-    engine.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
-    engine.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
+    engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
+    engine.db.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
 
     # ...and user2 likes item3, "Author B", "nice" and "good" items:
-    engine.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
+    engine.db.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
 
     # ...and user3 likes item4, "Author C", but we give no information about the tag!
-    engine.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
+    engine.db.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
 
 
 
