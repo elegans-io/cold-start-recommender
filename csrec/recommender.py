@@ -69,18 +69,18 @@ class Recommender(Singleton):
         self._items_cooccurrence = co_occurrence
 
         # update co-occurrence matrix for items categories
-        df_tot_cat_item = {}
+        df_n_cat_item = {}
 
         info_used = self.db.get_info_used()
         if len(info_used) > 0:
-            tot_categories_item_ratings = self.db.get_tot_categories_item_ratings()
+            n_categories_item_ratings = self.db.get_n_categories_item_ratings()
             for i in info_used:
-                df_tot_cat_item[i] = pd.DataFrame(tot_categories_item_ratings.get(i)).fillna(0).astype(int)
+                df_n_cat_item[i] = pd.DataFrame(n_categories_item_ratings.get(i)).fillna(0).astype(int)
 
             for i in info_used:
-                if type(df_tot_cat_item.get(i)) == pd.DataFrame:
-                    df_tot_cat_item[i] = (df_tot_cat_item[i] / df_tot_cat_item[i]).replace(np.inf, 0)
-                    self._categories_cooccurrence[i] = df_tot_cat_item[i].T.dot(df_tot_cat_item[i])
+                if type(df_n_cat_item.get(i)) == pd.DataFrame:
+                    df_n_cat_item[i] = (df_n_cat_item[i] / df_n_cat_item[i]).replace(np.nan, 0)
+                    self._categories_cooccurrence[i] = df_n_cat_item[i].T.dot(df_n_cat_item[i])
 
         self.cooccurrence_updated = time()
 

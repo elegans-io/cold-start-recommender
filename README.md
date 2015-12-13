@@ -118,7 +118,7 @@ A simple script
 ---------------
 
     from csrec import Recommender
-	engine = Recommender()
+    engine = Recommender()
 
     # Insert items with their properties (e.g. author, tags...)
     # NB lists can be passed as json-parseable strings or strings
@@ -153,14 +153,14 @@ A simple script
     # We should recommend to user1 items 3 and then 4, etc etc
     assert engine.get_recommendations('user1') == ['item3', 'item4']
 
-    # 'user2' signs in and we discover that it's 'user1' who was browsing anonymously
-    engine.db.reconcile_user('user2', 'user1')
+# 'user2' signs in and we discover that it's 'user1' who was browsing anonymously
+engine.db.reconcile_user('user2', 'user1')
 
-    # now we know user1 liked item1, 2, 3
-    assert engine.db.users_ratings_tbl['user1'] == {'item1': 4, 'item2': 5, 'item3': 5}
+# now we know user1 liked item1, 2, 3
+assert engine.db.users_ratings_tbl['user1'] == {'item1': 4, 'item2': 5, 'item3': 5}
 
-    # so we can only recommend item4
-    assert engine.get_recommendations('user1') == ['item4']
+# so we can only recommend item4
+assert engine.get_recommendations('user1') == ['item4']
 
 
 

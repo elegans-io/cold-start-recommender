@@ -32,6 +32,7 @@ class Database(DALBase, Singleton):
         self.tot_categories_user_ratings = {}  # sum of all ratings
         self.tot_categories_item_ratings = {}  # ditto
         self.n_categories_user_ratings = {}  # number of ratings
+        self.n_categories_item_ratings = {}
 
     def init(self, **params):
         if not params:
@@ -235,11 +236,12 @@ class Database(DALBase, Singleton):
                         self.tot_categories_user_ratings[info][user_id][value] += int(code)
                         self.n_categories_user_ratings.setdefault(info, {}).setdefault(user_id, {}).setdefault(value, 0)
                         self.n_categories_user_ratings[info][user_id][value] += 1
-                        # for the co-occurrence matrix is not necessary to do the same for item,
-                        #       but better do it
-                        # in case we want to compute similarities etc using categories
+                        # same for items
                         self.tot_categories_item_ratings.setdefault(info, {}).setdefault(value, {}).setdefault(user_id, 0)
                         self.tot_categories_item_ratings[info][value][user_id] += int(code)
+                        self.n_categories_item_ratings.setdefault(info, {}).setdefault(value, {}).setdefault(user_id, 0)
+                        self.n_categories_item_ratings [info][value][user_id] += 1
+
         else:
             self.insert_item(item_id=item_id)
         if not only_info:
@@ -412,7 +414,7 @@ class Database(DALBase, Singleton):
         old_social_dict.update(new_social_dict)
         self.users_social_tbl[new_user_id] = old_social_dict
 
-        for category in self.tot_categories_user_ratings:
+        for category in self.info_used:
             if old_user_id in self.tot_categories_user_ratings[category]:
                 tot_curr_cat_values = self.tot_categories_user_ratings[category][old_user_id]
                 del self.tot_categories_user_ratings[category][old_user_id]
@@ -423,8 +425,6 @@ class Database(DALBase, Singleton):
                         self.tot_categories_user_ratings[category][new_user_id].setdefault(value, 0)
                         self.tot_categories_user_ratings[category][new_user_id][value] += tot_code
 
-        for category in self.n_categories_user_ratings:
-            if old_user_id in self.n_categories_user_ratings[category]:
                 n_curr_cat_values = self.n_categories_user_ratings[category][old_user_id]
                 del self.n_categories_user_ratings[category][old_user_id]
                 if new_user_id not in self.n_categories_user_ratings[category]:
@@ -434,13 +434,18 @@ class Database(DALBase, Singleton):
                         self.n_categories_user_ratings[category][new_user_id].setdefault(value, 0)
                         self.n_categories_user_ratings[category][new_user_id][value] += n_code
 
-        for category in self.tot_categories_item_ratings:
             for v in self.tot_categories_item_ratings[category]:
                 if old_user_id in self.tot_categories_item_ratings[category][v]:
                     tot_curr_cat_item_values = self.tot_categories_item_ratings[category][v][old_user_id]
                     del self.tot_categories_item_ratings[category][v][old_user_id]
                     self.tot_categories_item_ratings[category][v].setdefault(new_user_id, 0)
                     self.tot_categories_item_ratings[category][v][new_user_id] += tot_curr_cat_item_values
+
+                    tot_curr_cat_item_values = self.n_categories_item_ratings[category][v][old_user_id]
+                    del self.n_categories_item_ratings[category][v][old_user_id]
+                    self.n_categories_item_ratings[category][v].setdefault(new_user_id, 0)
+                    self.n_categories_item_ratings[category][v][new_user_id] += 1
+
 
     def get_user_count(self):
         """
@@ -547,6 +552,9 @@ class Database(DALBase, Singleton):
 
     def get_tot_categories_item_ratings(self):
         return self.tot_categories_item_ratings
+
+    def get_n_categories_item_ratings(self):
+        return self.n_categories_item_ratings
 
     def get_n_categories_user_ratings(self):
         return self.n_categories_user_ratings
