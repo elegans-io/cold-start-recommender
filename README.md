@@ -39,35 +39,6 @@ library.
     :backlinks: none
 
 
-A simple script
----------------
-
-    from csrec import Recommender
-	engine = Recommender()
-
-    # Insert items with their properties (e.g. author, tags...)
-    # NB lists can be passed as json-parseable strings
-
-    engine.db.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good"]'})
-    engine.db.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
-    engine.db.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
-    engine.db.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
-
-    # The following lines tell the recommender that user1 likes items 1,2,3, but also "Author A", "B", "Z"
-    # and tags "nice", "good" and "fair"
-
-    engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
-    engine.db.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
-
-    # ...and user2 likes item3, "Author B", "nice" and "good" items:
-    engine.db.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
-
-    # ...and user3 likes item4, "Author C", but we give no information about the tag!
-    engine.db.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
-
-
-
-
 Dependencies
 ============
 
@@ -86,11 +57,6 @@ If you want to run the webservice then you also need:
 Features
 ========
 
-Persistence
------------
-
-
-
 The Cold Start Problem
 ----------------------
 
@@ -106,12 +72,12 @@ It allows **profiling with well-known Items without biasing the results**.
 
 For instance, if a call to insert_rating is done in this way:
 
-   engine.insert_rating(user_id='another_user', item_id='an_item', rating=3, item_info=['author'], only_info=True)
+   engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'], only_info=True)
 
-CSRec will only register that 'another_user' likes a certain author,
-but not that s/he might like 'an_item'. This is of fundamental
-importance when profiling Users with a "profiling page" on your
-website.  If you ask Users whether they prefer "Harry Potter" or "The
+CSRec will only register that 'user1' likes a certain author, certain tags,
+but not that s/he might like 'item1'. This is of fundamental
+importance when profiling users with a "profiling page" on your
+website.  If you ask users whether they prefer "Harry Potter" or "The
 Better Angels of Our Nature", and most of them choose Harry Potter, you would not 
 want to make the Item "Harry Potter" even more popular. You might just want to record
 that those users like children's books marketed as adult literature.
@@ -147,6 +113,56 @@ At the moment CSRec only provides purely item-based recommendations
 (co-occurence matrix dot the User's ratings array). In this way we can
 provide recommendations in less than 200msec for a matrix of about
 10,000 items.
+
+A simple script
+---------------
+
+    from csrec import Recommender
+	engine = Recommender()
+
+    # Insert items with their properties (e.g. author, tags...)
+    # NB lists can be passed as json-parseable strings or strings
+    engine.db.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good", "new"]'})
+
+    # The author field is a list, even if it was passed as a simple string:
+    assert engine.db.items_tbl['item1']['author'] ==  ['Author A']
+
+    engine.db.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
+    engine.db.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
+    engine.db.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
+
+    # The following lines tell the recommender that user1 likes items 1 and 2 but also "Author A", "B", "Z"
+    # and tags "nice", "good" and "fair"
+
+    engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
+    engine.db.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
+
+    # user1 has given a total of 4 points to Author A, 5 to Author B and Z, 4 to tag good, 5 to fair, and 9 to nice:
+    assert engine.db.tot_categories_user_ratings == {'author': {'user1': {'Author A': 4, 'Author B': 5, 'Author Z': 5}},
+    'tags': {'user1': {'fair': 5, 'good': 4, 'new': 4, 'nice': 9}}}
+
+    # ...and user2 likes item3, "Author B", "nice" and "good" items:
+    engine.db.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
+
+    # ...and user3 likes item4, "Author C", but we give no information about the tag!
+    engine.db.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
+
+    # ...and user4 only goes through the profiling page, and say she likes books tagged as 'new' and 'fashion'
+    engine.db.insert_item_action(user_id='user4', item_id='item4', code=5, item_meaningful_info=['tags'], only_info=True)
+
+    # We should recommend to user1 items 3 and then 4, etc etc
+    assert engine.get_recommendations('user1') == ['item3', 'item4']
+
+    # 'user2' signs in and we discover that it's 'user1' who was browsing anonymously
+    engine.db.reconcile_user('user2', 'user1')
+
+    # now we know user1 liked item1, 2, 3
+    assert engine.db.users_ratings_tbl['user1'] == {'item1': 4, 'item2': 5, 'item3': 5}
+
+    # so we can only recommend item4
+    assert engine.get_recommendations('user1') == ['item4']
+
+
 
 
 Versions

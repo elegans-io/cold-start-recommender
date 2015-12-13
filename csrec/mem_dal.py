@@ -15,18 +15,6 @@ import json
 from csrec.exceptions import *
 
 
-def _dd_float():
-    return defaultdict(float)
-
-
-def _dd_int():
-    return defaultdict(int)
-
-
-def _dd_dd_int():
-    return defaultdict(_dd_int)
-
-
 class Database(DALBase, Singleton):
     def __init__(self):
         DALBase.__init__(self)
@@ -35,15 +23,15 @@ class Database(DALBase, Singleton):
 
         self.items_tbl = {}  # table with items
 
-        self.users_ratings_tbl = defaultdict(_dd_float)  # table with users rating
-        self.items_ratings_tbl = defaultdict(_dd_float)  # table with items rating
+        self.users_ratings_tbl = {}  # table with users rating
+        self.items_ratings_tbl = {}  # table with items rating
 
-        self.users_social_tbl = defaultdict(_dd_float)  # table with action user-user
+        self.users_social_tbl = {}  # table with action user-user
         self.info_used = set()
 
-        self.tot_categories_user_ratings = defaultdict(_dd_dd_int)  # sum of all ratings  (inmemory testing)
-        self.tot_categories_item_ratings = defaultdict(_dd_dd_int)  # ditto
-        self.n_categories_user_ratings = defaultdict(_dd_dd_int)  # number of ratings  (inmemory testing)
+        self.tot_categories_user_ratings = {}  # sum of all ratings
+        self.tot_categories_item_ratings = {}  # ditto
+        self.n_categories_user_ratings = {}  # number of ratings
 
     def init(self, **params):
         if not params:
@@ -158,10 +146,7 @@ class Database(DALBase, Singleton):
         :param user_id_to: the user id destination of the action
         :param code: the code, default value is 3.0
         """
-        if user_id in self.users_social_tbl:
-            self.users_social_tbl[user_id][user_id_to] = code
-        else:
-            self.users_social_tbl[user_id] = {user_id_to: code}
+        self.users_social_tbl.setdefault(user_id, {})[user_id_to] = code
 
     @observable
     def remove_social_action(self, user_id, user_id_to):
@@ -191,8 +176,8 @@ class Database(DALBase, Singleton):
             userN: { 'user_0':3.0, ..., 'user_M':5.0}
         """
         if user_id is not None:
-            social_actions = self.users_social_tbl[user_id]
-            if not social_actions:
+            social_actions = self.users_social_tbl.get(user_id)
+            if social_actions is None:
                 return {}
             else:
                 return {user_id: social_actions}
@@ -246,17 +231,20 @@ class Database(DALBase, Singleton):
                     #
                     # Take total number of ratings and total rating:
                     for value in values:
+                        self.tot_categories_user_ratings.setdefault(info, {}).setdefault(user_id, {}).setdefault(value, 0)
                         self.tot_categories_user_ratings[info][user_id][value] += int(code)
+                        self.n_categories_user_ratings.setdefault(info, {}).setdefault(user_id, {}).setdefault(value, 0)
                         self.n_categories_user_ratings[info][user_id][value] += 1
                         # for the co-occurrence matrix is not necessary to do the same for item,
                         #       but better do it
                         # in case we want to compute similarities etc using categories
+                        self.tot_categories_item_ratings.setdefault(info, {}).setdefault(value, {}).setdefault(user_id, 0)
                         self.tot_categories_item_ratings[info][value][user_id] += int(code)
         else:
             self.insert_item(item_id=item_id)
         if not only_info:
-                self.users_ratings_tbl[user_id][item_id] = code
-                self.items_ratings_tbl[item_id][user_id] = code
+                self.users_ratings_tbl.setdefault(user_id, {})[item_id] = code
+                self.items_ratings_tbl.setdefault(item_id, {})[user_id] = code
 
     @observable
     def remove_item_action(self, user_id, item_id):
@@ -292,8 +280,8 @@ class Database(DALBase, Singleton):
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
         """
         if user_id is not None:
-            item_actions = self.users_ratings_tbl[user_id]
-            if not item_actions:
+            item_actions = self.users_ratings_tbl.get(user_id)
+            if item_actions is None:
                 return {}
             else:
                 return {user_id: item_actions}
@@ -326,8 +314,8 @@ class Database(DALBase, Singleton):
             itemN: { 'user_0':3.0, ..., 'user_N':5.0}
         """
         if item_id is not None:
-            users_actions = self.items_ratings_tbl[item_id]
-            if users_actions:
+            users_actions = self.items_ratings_tbl.get(item_id)
+            if users_actions is None:
                 return {}
             else:
                 return {item_id: users_actions}
@@ -402,10 +390,10 @@ class Database(DALBase, Singleton):
         # replacing all ratings of the user
         for i, r in old_user_actions.items():
             try:
-                del self.items_ratings_tbl[i][old_user_id]
+                del self.items_ratings_tbl.setdefault(i, {})[old_user_id]
             except KeyError:
                 pass
-            self.items_ratings_tbl[i][new_user_id] = r
+            self.items_ratings_tbl.setdefault(i, {})[new_user_id] = r
 
         # updating the social stuff
         old_social_dict = {}
@@ -429,23 +417,30 @@ class Database(DALBase, Singleton):
                 tot_curr_cat_values = self.tot_categories_user_ratings[category][old_user_id]
                 del self.tot_categories_user_ratings[category][old_user_id]
                 if new_user_id not in self.tot_categories_user_ratings[category]:
-                    self.tot_categories_user_ratings[category][new_user_id] = defaultdict(int)
-                self.tot_categories_user_ratings[category][new_user_id].update(tot_curr_cat_values)
+                    self.tot_categories_user_ratings[category][new_user_id] = tot_curr_cat_values
+                else:
+                    for value, tot_code in tot_curr_cat_values.iteritems():
+                        self.tot_categories_user_ratings[category][new_user_id].setdefault(value, 0)
+                        self.tot_categories_user_ratings[category][new_user_id][value] += tot_code
 
         for category in self.n_categories_user_ratings:
             if old_user_id in self.n_categories_user_ratings[category]:
                 n_curr_cat_values = self.n_categories_user_ratings[category][old_user_id]
                 del self.n_categories_user_ratings[category][old_user_id]
                 if new_user_id not in self.n_categories_user_ratings[category]:
-                    self.n_categories_user_ratings[category][new_user_id] = defaultdict(int)
-                self.n_categories_user_ratings[category][new_user_id].update(n_curr_cat_values)
+                    self.n_categories_user_ratings[category][new_user_id] = n_curr_cat_values
+                else:
+                    for value, n_code in n_curr_cat_values.iteritems():
+                        self.n_categories_user_ratings[category][new_user_id].setdefault(value, 0)
+                        self.n_categories_user_ratings[category][new_user_id][value] += n_code
 
         for category in self.tot_categories_item_ratings:
             for v in self.tot_categories_item_ratings[category]:
                 if old_user_id in self.tot_categories_item_ratings[category][v]:
                     tot_curr_cat_item_values = self.tot_categories_item_ratings[category][v][old_user_id]
                     del self.tot_categories_item_ratings[category][v][old_user_id]
-                    self.tot_categories_item_ratings[category][v][new_user_id] = tot_curr_cat_item_values
+                    self.tot_categories_item_ratings[category][v].setdefault(new_user_id, 0)
+                    self.tot_categories_item_ratings[category][v][new_user_id] += tot_curr_cat_item_values
 
     def get_user_count(self):
         """
