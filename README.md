@@ -48,11 +48,8 @@ The following python packages are needed in order to run the recommender:
 * pandas
 * numpy
 
-If you want to run the webservice then you also need:
-
-* webapp2
-* webob
-* paste
+Since version 4, the web service has been taken out of the package.
+You need to install elegans.io's package [csrec-webapp[(https://github.com/elegans-io/csrec-webapp)
 
 Features
 ========
@@ -68,7 +65,9 @@ previous rating by any User, you cannot make any recommendations.
 
 CSRec tackles the issue in various ways.
 
-It allows **profiling with well-known Items without biasing the results**.
+###Selective profiling
+
+CSRec allows **profiling with well-known Items without biasing the results**.
 
 For instance, if a call to insert_rating is done in this way:
 
@@ -87,27 +86,30 @@ co-occurence matrix is often too sparse to compute decent
 recommendations. In this way you start building multiple, denser,
 co-occurence matrices and use them from the very beginning.
 
-**Any information is used.** You decide which information you should
+###Store any possible information
+
+Any information is used. You decide which information you should
 record about a User rating an Item. This is similar to the previous
 point, but you also register the item_id.
 
-**Any information is used *immediately*.** The co-occurence matrix is
+###Use everything you can, now
+
+Any information is used *immediately*. The co-occurence matrix is
 updated as soon as a rating is inserted.
 
-**It tracks anonymous users,** e.g. random visitors of a website
-before the sign in/ sign up process. After sign up/ sign in the
+###Efficient users' tracking
+
+It tracks anonymous users and merges their preferences into profiles. E.g. an anonymous visitors of a website
+likes a few items before the sign in/ sign up process. After sign up/ sign in the
 information can be reconciled --information relative to the session ID
 is moved into the correspondent user ID entry.
 
-Mix Recommended with Popular Items
-----------------------------------
+###Mix recommended items and popular items
 
-What about users who would only receive a couple of recommended items?
-No problem! We'll fill the list with the most popular items that were not
-recommended (nor rated by such users).
+What about users who would only receive a couple of recommendations?
+No problem! CSRec will fill the list with the most popular items (nor rated by such users).
 
-Algorithms
-----------
+###Algorithms
 
 At the moment CSRec only provides purely item-based recommendations
 (co-occurence matrix dot the User's ratings array). In this way we can
@@ -117,41 +119,43 @@ provide recommendations in less than 200msec for a matrix of about
 A simple script
 ---------------
 
-    from csrec import Recommender
-    engine = Recommender()
 
-    # Insert items with their properties (e.g. author, tags...)
-    # NB lists can be passed as json-parseable strings or strings
-    engine.db.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good", "new"]'})
+```python
+from csrec import Recommender
+engine = Recommender()
 
-    # The author field is a list, even if it was passed as a simple string:
-    assert engine.db.items_tbl['item1']['author'] ==  ['Author A']
+# Insert items with their properties (e.g. author, tags...)
+# NB lists can be passed as json-parseable strings or strings
+engine.db.insert_item(item_id='item1', attributes={'author': 'Author A', 'tags': '["nice", "good", "new"]'})
 
-    engine.db.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
-    engine.db.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
-    engine.db.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
+# The author field is a list, even if it was passed as a simple string:
+assert engine.db.items_tbl['item1']['author'] ==  ['Author A']
 
-    # The following lines tell the recommender that user1 likes items 1 and 2 but also "Author A", "B", "Z"
-    # and tags "nice", "good" and "fair"
+engine.db.insert_item(item_id='item2', attributes={'author': '["Author B", "Author Z"]', 'tags': '["nice", "fair"]'})
+engine.db.insert_item(item_id='item3', attributes={'author': 'Author B', 'tags': '["nice", "good"]'})
+engine.db.insert_item(item_id='item4', attributes={'author': 'Author C', 'tags': '["new", "fashion"]'})
 
-    engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
-    engine.db.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
+# The following lines tell the recommender that user1 likes items 1 and 2 but also "Author A", "B", "Z"
+# and tags "nice", "good" and "fair"
 
-    # user1 has given a total of 4 points to Author A, 5 to Author B and Z, 4 to tag good, 5 to fair, and 9 to nice:
-    assert engine.db.tot_categories_user_ratings == {'author': {'user1': {'Author A': 4, 'Author B': 5, 'Author Z': 5}},
-    'tags': {'user1': {'fair': 5, 'good': 4, 'new': 4, 'nice': 9}}}
+engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'])
+engine.db.insert_item_action(user_id='user1', item_id='item2', code=5, item_meaningful_info=['author', 'tags'])
 
-    # ...and user2 likes item3, "Author B", "nice" and "good" items:
-    engine.db.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
+# user1 has given a total of 4 points to Author A, 5 to Author B and Z, 4 to tag good, 5 to fair, and 9 to nice:
+assert engine.db.tot_categories_user_ratings == {'author': {'user1': {'Author A': 4, 'Author B': 5, 'Author Z': 5}},
+'tags': {'user1': {'fair': 5, 'good': 4, 'new': 4, 'nice': 9}}}
 
-    # ...and user3 likes item4, "Author C", but we give no information about the tag!
-    engine.db.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
+# ...and user2 likes item3, "Author B", "nice" and "good" items:
+engine.db.insert_item_action(user_id='user2', item_id='item3', code=5, item_meaningful_info=['author', 'tags'])
 
-    # ...and user4 only goes through the profiling page, and say she likes books tagged as 'new' and 'fashion'
-    engine.db.insert_item_action(user_id='user4', item_id='item4', code=5, item_meaningful_info=['tags'], only_info=True)
+# ...and user3 likes item4, "Author C", but we give no information about the tag!
+engine.db.insert_item_action(user_id='user3', item_id='item4', code=5, item_meaningful_info=['author'])
 
-    # We should recommend to user1 items 3 and then 4, etc etc
-    assert engine.get_recommendations('user1') == ['item3', 'item4']
+# ...and user4 only goes through the profiling page, and say she likes books tagged as 'new' and 'fashion'
+engine.db.insert_item_action(user_id='user4', item_id='item4', code=5, item_meaningful_info=['tags'], only_info=True)
+
+# We should recommend to user1 items 3 and then 4, etc etc
+assert engine.get_recommendations('user1') == ['item3', 'item4']
 
 # 'user2' signs in and we discover that it's 'user1' who was browsing anonymously
 engine.db.reconcile_user('user2', 'user1')
@@ -161,7 +165,7 @@ assert engine.db.users_ratings_tbl['user1'] == {'item1': 4, 'item2': 5, 'item3':
 
 # so we can only recommend item4
 assert engine.get_recommendations('user1') == ['item4']
-
+```
 
 
 
