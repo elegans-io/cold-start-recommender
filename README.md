@@ -189,7 +189,7 @@ Versions
 * Heavy refactoring
 * Serialization and de-serialization of the data in a file for backup
 
-**v 4.0 **
+**v 4.0**
 
 * Data Abstraction Layers for memory and mongo.
 * NB Not compatible with 3.15
