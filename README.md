@@ -180,7 +180,7 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
-**v 4.1 No backward compatibility with 3. **
+**v 4.1 No backward compatibility with 3**
 
 * Action of users on users can be saved (see `insert_social_action` in dal.py)
 * Various new metrics to monitor users' interaction (see e.g. `get_social_actions` in dal.py)
@@ -190,6 +190,7 @@ Versions
 * Serialization and de-serialization of the data in a file for backup
 
 **v 4.0 **
+
 * Data Abstraction Layers for memory and mongo.
 * NB Not compatible with 3.15
 
