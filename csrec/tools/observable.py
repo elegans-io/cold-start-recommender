@@ -2,6 +2,7 @@ __author__ = "elegans.io Ltd"
 __email__ = "info@elegans.io"
 
 import abc
+from functools import wraps
 
 
 def observable(function):
@@ -10,14 +11,13 @@ def observable(function):
     :param function:
     :return:
     """
-    wrapped_function_name = function.__name__
-
+    @wraps(function)
     def newf(*args, **kwargs):
         return_value = function(*args, **kwargs)
         called_class = args[0]
 
         try:
-            observers = called_class.observers[wrapped_function_name]
+            observers = called_class.observers[function]
         except KeyError:
             pass
         else:
@@ -25,7 +25,6 @@ def observable(function):
                 kwargs['return_value'] = return_value
                 o(**kwargs)
         return return_value
-    newf.__name__ = wrapped_function_name
     return newf
 
 

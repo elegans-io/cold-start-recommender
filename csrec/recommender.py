@@ -69,28 +69,28 @@ class Recommender(Singleton):
         self._items_cooccurrence = co_occurrence
 
         # update co-occurrence matrix for items categories
-        df_tot_cat_item = {}
+        df_n_cat_item = {}
 
         info_used = self.db.get_info_used()
         if len(info_used) > 0:
-            tot_categories_item_ratings = self.db.get_tot_categories_item_ratings()
+            n_categories_item_ratings = self.db.get_n_categories_item_ratings()
             for i in info_used:
-                df_tot_cat_item[i] = pd.DataFrame(tot_categories_item_ratings.get(i)).fillna(0).astype(int)
+                df_n_cat_item[i] = pd.DataFrame(n_categories_item_ratings.get(i)).fillna(0).astype(int)
 
             for i in info_used:
-                if type(df_tot_cat_item.get(i)) == pd.DataFrame:
-                    df_tot_cat_item[i] = (df_tot_cat_item[i] / df_tot_cat_item[i]).replace(np.inf, 0)
-                    self._categories_cooccurrence[i] = df_tot_cat_item[i].T.dot(df_tot_cat_item[i])
+                if type(df_n_cat_item.get(i)) == pd.DataFrame:
+                    df_n_cat_item[i] = (df_n_cat_item[i] / df_n_cat_item[i]).replace(np.nan, 0)
+                    self._categories_cooccurrence[i] = df_n_cat_item[i].T.dot(df_n_cat_item[i])
 
         self.cooccurrence_updated = time()
 
     def compute_items_by_popularity(self):
         """
-        As per name, get self.
-        :return: list of popular items, 0=most popular
+        As per name, get self.items_by_popularity
+        :return: None
         """
         df_item = pd.DataFrame(self.db.get_item_actions()).T.fillna(0).astype(int).sum()
-        df_item.sort(ascending=False)
+        df_item.sort_values(inplace=True, ascending=False)
         pop_items = list(df_item.index)
         all_items = set(self.db.get_items().keys())
         self.items_by_popularity = (pop_items + list(all_items - set(pop_items)))
@@ -153,7 +153,7 @@ class Recommender(Singleton):
                 rec = self._items_cooccurrence.T.dot(df_user[user_id])
                 self.logger.debug("[get_recommendations] Rec: %s", rec)
             # Sort by cooccurrence * rating:
-            rec.sort(ascending=False)
+            rec.sort_values(inplace=True, ascending=False)
 
             # If necessary, add popular items
             if len(rec) < max_recs:
@@ -191,7 +191,7 @@ class Recommender(Singleton):
                 # print("DEBUG [get_recommendations]. user_vec:\n", user_vec)
                 try:
                     cat_rec[cat] = self._categories_cooccurrence[cat].T.dot(user_vec)
-                    cat_rec[cat].sort(ascending=False)
+                    cat_rec[cat].sort_values(inplace=True, ascending=False)
                     #print("DEBUG [get_recommendations] cat_rec (try):\n %s", cat_rec)
                 except:
                     self._create_cooccurrence()
@@ -213,7 +213,7 @@ class Recommender(Singleton):
                     except Exception as e:
                         self.logger.error("item %s, category %s", item_id, cat)
                         logging.exception(e)
-        global_rec.sort(ascending=False)
+        global_rec.sort_values(inplace=True, ascending=False)
 #        print("DEBUG [get_recommendations] global_rec:\n %s", global_rec)
 
         if user_has_rated_items:
