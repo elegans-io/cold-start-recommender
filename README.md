@@ -26,8 +26,6 @@ pilots, where statistics are so low that filters (e.g. loglikelihood
 filter on the co-occurence matrix) are premature. It aims to
 *gather data* in order to immediately personalise the user experience.
 
-TODO Future releases will include state of the art algorithms
-
 CSRec is written in Python, and under the hood it uses the `Pandas`_
 library. 
 
@@ -167,14 +165,29 @@ assert engine.db.users_ratings_tbl['user1'] == {'item1': 4, 'item2': 5, 'item3':
 assert engine.get_recommendations('user1') == ['item4']
 ```
 
+Remember that the cold start recommender is now only in memory, which means that you must implement a
+ periodic saving of the data:
+
+```python
+# Save the data from the engine from above
+engine.db.serialize('pippo.db')
+
+# create a new engine with the same data:
+new_engine = Recommender()
+new_engine.db.restore('pippo.db')
+```
 
 
 Versions
 --------
 **v 4.00**
 
-* Data Abstraction Layers for memory and mongo.
-* NB Not compatible with 3.*
+* Data Abstraction Layers for memory
+* Action of users on users can be saved (see `insert_social_action` in dal.py)
+* Various new metrics to monitor users' interaction (see e.g. `get_social_actions` in dal.py)
+* No more embedded web service: use [csrec-webapp](https://github.com/elegans-io/csrec-webapp)
+* TODO: make "social" recommendations based on users saving actions on each other
+* NB Not compatible with 3.15
 
 **v 3.15**
 
