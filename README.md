@@ -180,15 +180,17 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
-**v 4.00 No backward compatibility**
+**v 4.1 No backward compatibility with 3. **
 
-* Data Abstraction Layer for storing in memory
 * Action of users on users can be saved (see `insert_social_action` in dal.py)
 * Various new metrics to monitor users' interaction (see e.g. `get_social_actions` in dal.py)
 * No more embedded web service: use [csrec-webapp](https://github.com/elegans-io/csrec-webapp)
 * TODO: make "social" recommendations based on users saving actions on each other
 * Heavy refactoring
 * Serialization and de-serialization of the data in a file for backup
+
+**v 4.0 **
+* Data Abstraction Layers for memory and mongo.
 * NB Not compatible with 3.15
 
 **v 3.15**
