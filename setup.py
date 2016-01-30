@@ -25,13 +25,15 @@ def setup_package():
     except ImportError:
         build_requires.append('pandas')
 
+    from csrec import __version__
+
     metadata = dict(
         name='cold-start-recommender',
 
         # Versions should comply with PEP440.  For a discussion on single-sourcing
         # the version across setup.py and the project code, see
         # https://packaging.python.org/en/latest/single_source_version.html
-        version='0.4.1',
+        version=__version__,
         description='In-memory recommender for recommendations produced on-the-fly',
         long_description=long_description,
 
