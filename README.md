@@ -71,11 +71,11 @@ CSRec allows **profiling with well-known Items without biasing the results**.
 
 For instance, if a call to insert_rating is done in this way:
 
-   engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'], only_info=True)
+   `engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'], only_info=True)`
 
-CSRec will only register that 'user1' likes a certain author, certain tags,
-but not that s/he might like 'item1'. This is of fundamental
-importance when profiling users with a "profiling page" on your
+CSRec will only register that `user1` likes a certain author, certain tags,
+but not that s/he might like `item1`. This is of fundamental
+importance when profiling users through a "profiling page" on your
 website.  If you ask users whether they prefer "Harry Potter" or "The
 Better Angels of Our Nature", and most of them choose Harry Potter, you would not 
 want to make the Item "Harry Potter" even more popular. You might just want to record
