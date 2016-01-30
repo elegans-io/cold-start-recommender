@@ -27,7 +27,7 @@ def setup_package():
         # Versions should comply with PEP440.  For a discussion on single-sourcing
         # the version across setup.py and the project code, see
         # https://packaging.python.org/en/latest/single_source_version.html
-        version='0.4',
+        version='0.4.0',
         description='In-memory recommender for recommendations produced on-the-fly',
         long_description=long_description,
 
