@@ -49,7 +49,7 @@ The following python packages are needed in order to run the recommender:
 * numpy
 
 Since version 4, the web service has been taken out of the package.
-You need to install elegans.io's package [csrec-webapp[(https://github.com/elegans-io/csrec-webapp)
+You need to install elegans.io's package [csrec-webapp](https://github.com/elegans-io/csrec-webapp)
 
 Features
 ========
