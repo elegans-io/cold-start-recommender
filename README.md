@@ -171,10 +171,11 @@ assert engine.get_recommendations('user1') == ['item4']
 
 Versions
 --------
-**v 4.00**
+**v 4.00 No backward compatibility**
 
-* Data Abstraction Layers for memory and mongo.
-* NB Not compatible with 3.*
+* Heavy refactoring
+* Data Abstraction Layer for storing in memory
+* Serialization and de-serialization of the data in a file for rebooting
 
 **v 3.15**
 
