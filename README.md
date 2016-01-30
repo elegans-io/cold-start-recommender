@@ -2,7 +2,7 @@
 Easy, fast, greedy recommender to avoid a cold start
 ****************************************************
         
-"Will it scale?" is a less important question than "will it ever matter?" [kadavy.net]
+"Will it scale?" is a less important question than "will it ever matter?" [kadavy.net](kadavy.net)
 
 We developed Cold Start Recommender because we needed a recommender
 with the following characteristics:
@@ -47,7 +47,7 @@ The following python packages are needed in order to run the recommender:
 * numpy
 
 Since version 4, the web service has been taken out of the package.
-You need to install elegans.io's package [csrec-webapp[(https://github.com/elegans-io/csrec-webapp)
+You need to install elegans.io's package [csrec-webapp](https://github.com/elegans-io/csrec-webapp)
 
 Features
 ========
@@ -59,7 +59,7 @@ The Cold Start Problem originates from the fact that collaborative
 filtering recommenders need data to build recommendations. Typically,
 if Users who liked item 'A' also liked item 'B', the recommender would
 recommend 'B' to a user who just liked 'A'. But if you have no
-previous rating by any User, you cannot make any recommendations.
+previous rating by any User, you cannot make any recommendation.
 
 CSRec tackles the issue in various ways.
 
@@ -69,11 +69,11 @@ CSRec allows **profiling with well-known Items without biasing the results**.
 
 For instance, if a call to insert_rating is done in this way:
 
-   engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'], only_info=True)
+   `engine.db.insert_item_action(user_id='user1', item_id='item1', code=4, item_meaningful_info=['author', 'tags'], only_info=True)`
 
-CSRec will only register that 'user1' likes a certain author, certain tags,
-but not that s/he might like 'item1'. This is of fundamental
-importance when profiling users with a "profiling page" on your
+CSRec will only register that `user1` likes a certain author, certain tags,
+but not that s/he might like `item1`. This is of fundamental
+importance when profiling users through a "profiling page" on your
 website.  If you ask users whether they prefer "Harry Potter" or "The
 Better Angels of Our Nature", and most of them choose Harry Potter, you would not 
 want to make the Item "Harry Potter" even more popular. You might just want to record
@@ -180,13 +180,15 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
-**v 4.00**
+**v 4.00 No backward compatibility**
 
-* Data Abstraction Layers for memory
+* Data Abstraction Layer for storing in memory
 * Action of users on users can be saved (see `insert_social_action` in dal.py)
 * Various new metrics to monitor users' interaction (see e.g. `get_social_actions` in dal.py)
 * No more embedded web service: use [csrec-webapp](https://github.com/elegans-io/csrec-webapp)
 * TODO: make "social" recommendations based on users saving actions on each other
+* Heavy refactoring
+* Serialization and de-serialization of the data in a file for backup
 * NB Not compatible with 3.15
 
 **v 3.15**
