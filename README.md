@@ -2,7 +2,7 @@
 Easy, fast, greedy recommender to avoid a cold start
 ****************************************************
         
-"Will it scale?" is a less important question than "will it ever matter?" [kadavy.net]
+"Will it scale?" is a less important question than "will it ever matter?" [kadavy.net](kadavy.net)
 
 We developed Cold Start Recommender because we needed a recommender
 with the following characteristics:
