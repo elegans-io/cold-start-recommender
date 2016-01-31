@@ -1,18 +1,11 @@
 from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
-import json
 
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the relevant file
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except(IOError, ImportError) as e:
-    print "Warning:", e
-    print "Using pre-made DESCRIPTION.rst"
-    long_description = open('DESCRIPTION.rst').read()
+long_description = open('README.md').read()
 
 
 def setup_package():
@@ -28,16 +21,13 @@ def setup_package():
     except ImportError:
         build_requires.append('pandas')
 
-    with open('csrec/pkg_info.json') as fp:
-        _info = json.load(fp)
-
     metadata = dict(
         name='cold-start-recommender',
 
         # Versions should comply with PEP440.  For a discussion on single-sourcing
         # the version across setup.py and the project code, see
         # https://packaging.python.org/en/latest/single_source_version.html
-        version=_info['version'],
+        version='4.0.0',
         description='In-memory recommender for recommendations produced on-the-fly',
         long_description=long_description,
 
@@ -45,11 +35,11 @@ def setup_package():
         url='https://github.com/elegans-io/cold-start-recommender',
 
         # Author details
-        author=_info['author'],
-        author_email=_info['email'],
+        author='elegans.io Ltd',
+        author_email='info@elegans.io',
 
         # Choose your license
-        license=_info['license'],
+        license='GPL v2',
 
         # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
@@ -76,7 +66,8 @@ def setup_package():
 
         # You can just specify the packages manually here if your project is
         # simple. Or you can use find_packages().
-        packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
+        #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
+        packages=['csrec'],
 
         # List run-time dependencies here.  These will be installed by pip when your
         # project is installed. For an analysis of "install_requires" vs pip's
@@ -98,10 +89,8 @@ def setup_package():
         # installed, specify them here.  If using Python 2.6 or less, then these
         # have to be included in MANIFEST.in as well.
         package_data={
-            'csrec': ['*.cl', '*.py', '*.json']
+            'csrec': ['*.cl', '*.py']
         },
-
-#        data_files=[('config', ['config/csrec.config'])],
 
         include_package_data=True
 
