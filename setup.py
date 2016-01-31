@@ -10,8 +10,9 @@ try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst')
 except(IOError, ImportError) as e:
-    print e
-    long_description = open('README.md').read()
+    print "Warning:", e
+    print "Using pre-made DESCRIPTION.rst"
+    long_description = open('DESCRIPTION.rst').read()
 
 
 def setup_package():
@@ -63,7 +64,7 @@ def setup_package():
             'Topic :: Scientific/Engineering :: Artificial Intelligence',
 
             # Pick your license as you wish (should match "license" above)
-            'License :: GNU General Public License v2 (GPLv2)',
+            'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
 
             # Specify the Python versions you support here. In particular, ensure
             # that you indicate whether you support Python 2, Python 3 or both.
@@ -96,21 +97,22 @@ def setup_package():
         # If there are data files included in your packages that need to be
         # installed, specify them here.  If using Python 2.6 or less, then these
         # have to be included in MANIFEST.in as well.
-        # package_data={
-        #     'sample': ['package_data.dat'],
-        #     'csrec': ['*.cl', '*.py']
-        # },
+        package_data={
+            'csrec': ['*.cl', '*.py', '*.json']
+        },
 
-        data_files=[('config', ['config/csrec.config'])],
+#        data_files=[('config', ['config/csrec.config'])],
+
+        include_package_data=True
 
         # To provide executable scripts, use entry points in preference to the
         # "scripts" keyword. Entry points provide cross-platform support and allow
         # pip to create the appropriate form of executable for the target platform.
-        entry_points={
-            'console_scripts': [
-                'sample=sample:main',
-            ],
-        },
+        # entry_points={
+        #     'console_scripts': [
+        #         'sample=sample:main',
+        #     ],
+        # },
     )
 
     setup(**metadata)
