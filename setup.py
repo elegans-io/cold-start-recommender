@@ -56,11 +56,11 @@ def setup_package():
             'Development Status :: 4 - Beta',
 
             # Indicate who your project is intended for
-            'Intended Audience :: Internal',
-            'Topic :: Private :: Build Tools',
+            'Intended Audience :: Information Technology',
+            'Topic :: Scientific/Engineering :: Artificial Intelligence',
 
             # Pick your license as you wish (should match "license" above)
-            'License :: LGPL :: LGPL',
+            'License :: GNU General Public License v2 (GPLv2)',
 
             # Specify the Python versions you support here. In particular, ensure
             # that you indicate whether you support Python 2, Python 3 or both.
