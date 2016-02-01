@@ -1,12 +1,11 @@
-Easy, fast, greedy recommender to avoid a cold start
-====================================================
+Easy, fast, greedy recommender
+==============================
 
 "Will it scale?" is a less important question than "will it ever matter?" ([David Kadavy](http://kadavy.net))
 
-
 **NB: We have re-written good part of the recommender.**
 
-The API have changed, and the webapp is now a separate package, called cold-start-recommender-webapp, which can be installed via `pip`.
+The APIs have changed, and the **webapp** is now a separate package, called `cold-start-recommender-webapp`, which can be installed via `pip`.
 You can still access the old version with:
 
 `pip install cold-start-recommender==0.3.15`
