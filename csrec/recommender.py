@@ -1,9 +1,7 @@
-from collections import defaultdict
 import pandas as pd
 import numpy as np
 from time import time
 import logging
-import json
 from csrec.tools.singleton import Singleton
 from csrec import factory_dal
 

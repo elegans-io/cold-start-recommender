@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
+import csrec  # for version
 
 here = path.abspath(path.dirname(__file__))
 
@@ -10,16 +11,7 @@ long_description = open('README.md').read()
 
 def setup_package():
 
-    build_requires = []
-    try:
-        import numpy
-    except ImportError:
-        build_requires.append('numpy')
-
-    try:
-        import pandas
-    except ImportError:
-        build_requires.append('pandas')
+    build_requires = ['numpy', 'pandas']
 
     metadata = dict(
         name='cold-start-recommender',
@@ -27,7 +19,7 @@ def setup_package():
         # Versions should comply with PEP440.  For a discussion on single-sourcing
         # the version across setup.py and the project code, see
         # https://packaging.python.org/en/latest/single_source_version.html
-        version='4.0.0',
+        version=csrec.__version__,
         description='In-memory recommender for recommendations produced on-the-fly',
         long_description=long_description,
 
