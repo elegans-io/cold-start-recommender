@@ -1,25 +1,18 @@
-****************************************************
 Easy, fast, greedy recommender to avoid a cold start
-****************************************************
+====================================================
 
 "Will it scale?" is a less important question than "will it ever matter?" ([David Kadavy](http://kadavy.net))
 
 
-**!!README!!**
+**NB: We have re-written good part of the recommender.**
 
-We have re-written good part of the recommender.
-
-The API have changed, and the webapp is now a separate package,
-called cold-start-recommender-webapp, which can be installed via
-`pip`.
-
+The API have changed, and the webapp is now a separate package, called cold-start-recommender-webapp, which can be installed via `pip`.
 You can still access the old version with:
 
 `pip install cold-start-recommender==0.3.15`
 
 Any comment sent to info@elegans.io will be appreciated.
-
-**END**
+**End of NB**
 
 We developed Cold Start Recommender because we needed a recommender
 with the following characteristics:
@@ -45,14 +38,6 @@ filter on the co-occurence matrix) are premature. It aims to
 
 CSRec is written in Python, and under the hood it uses the `Pandas`_
 library. 
-
-**Table of Contents**
-
-.. contents::
-    :local:
-    :depth: 1
-    :backlinks: none
-
 
 Dependencies
 ============
