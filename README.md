@@ -182,7 +182,7 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
-**v 4.1 No backward compatibility with 3**
+**v 0.4.0 No backward compatibility with 3**
 
 * Action of users on users can be saved (see `insert_social_action` in dal.py)
 * Various new metrics to monitor users' interaction (see e.g. `get_social_actions` in dal.py)
@@ -190,33 +190,29 @@ Versions
 * TODO: make "social" recommendations based on users saving actions on each other
 * Heavy refactoring
 * Serialization and de-serialization of the data in a file for backup
-
-**v 4.0**
-
 * Data Abstraction Layers for memory and mongo.
-* NB Not compatible with 3.15
 
-**v 3.15**
+**v 0.3.15**
 
 * It is now a singleton, improved performance when used with, eg, Pyramid
 
-**v 3.14**
+**v 0.3.14**
 
 * Minor bugs
 
-**v 3.13**
+**v 0.3.13**
 
 * Added self.drop_db
 
-**v 3.12**
+**v 0.3.12**
 
 * Bug fixed
 
-**v 3.11**
+**v 0.3.11**
 
 * Some debugs messsages added
 
-**v 3.10**
+**v 0.3.10**
 
 * Categories can now be a list (or passed as json-parseable string).
   This is important for, eg, tags which can now be passed in a REST API as:
@@ -225,15 +221,15 @@ Versions
 
 * Fixed bug in recommender_api example file
 
-**v 3.8**
+**v 0.3.8**
 
 * Sync categories' users and items collections in get_recommendations
 
-**v 3.7**
+**v 0.3.7**
 
 * Bug fixing for in-memory
 
-**v 3.5**
+**v 0.3.5**
 
 * Added logging
 * Added creation of collections for super-cold start (not even one rating, and still user asking for recommendations...)
