@@ -65,7 +65,7 @@ previous rating by any User, you cannot make any recommendation.
 
 CSRec tackles the issue in various ways.
 
-###Selective profiling
+### Selective profiling
 
 CSRec allows **profiling with well-known Items without biasing the results**.
 
@@ -86,30 +86,30 @@ co-occurence matrix is often too sparse to compute decent
 recommendations. In this way you start building multiple, denser,
 co-occurence matrices and use them from the very beginning.
 
-###Store any possible information
+### Store any possible information
 
 Any information is used. You decide which information you should
 record about a User rating an Item. This is similar to the previous
 point, but you also register the item_id.
 
-###Use everything you can, now
+### Use everything you can, now
 
 Any information is used *immediately*. The co-occurence matrix is
 updated as soon as a rating is inserted.
 
-###Efficient users' tracking
+### Efficient users' tracking
 
 It tracks anonymous users and merges their preferences into profiles. E.g. an anonymous visitors of a website
 likes a few items before the sign in/ sign up process. After sign up/ sign in the
 information can be reconciled --information relative to the session ID
 is moved into the correspondent user ID entry.
 
-###Mix recommended items and popular items
+### Mix recommended items and popular items
 
 What about users who would only receive a couple of recommendations?
 No problem! CSRec will fill the list with the most popular items (nor rated by such users).
 
-###Algorithms
+### Algorithms
 
 At the moment CSRec only provides purely item-based recommendations
 (co-occurence matrix dot the User's ratings array). In this way we can
