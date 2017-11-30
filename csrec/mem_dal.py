@@ -64,7 +64,7 @@ class Database(DALBase, Singleton):
             }
         """
         if attributes is not None:
-            for k, v in attributes.iteritems():
+            for k, v in attributes.items():
                 try:
                     v = json.loads(v)
                 except ValueError:
@@ -131,7 +131,7 @@ class Database(DALBase, Singleton):
 
         :return: an iterator on items
         """
-        return self.items_tbl.iteritems()
+        return self.items_tbl.items()
 
     @observable
     def insert_social_action(self, user_id, user_id_to, code=3.0):
@@ -301,7 +301,7 @@ class Database(DALBase, Singleton):
             ...
             userN: { 'item_0':3.0, ..., 'item_N':5.0}
         """
-        return self.users_ratings_tbl.iteritems()
+        return self.users_ratings_tbl.items()
 
     def get_item_ratings(self, item_id=None):
         """
@@ -421,7 +421,7 @@ class Database(DALBase, Singleton):
                 if new_user_id not in self.tot_categories_user_ratings[category]:
                     self.tot_categories_user_ratings[category][new_user_id] = tot_curr_cat_values
                 else:
-                    for value, tot_code in tot_curr_cat_values.iteritems():
+                    for value, tot_code in tot_curr_cat_values.items():
                         self.tot_categories_user_ratings[category][new_user_id].setdefault(value, 0)
                         self.tot_categories_user_ratings[category][new_user_id][value] += tot_code
 
@@ -430,7 +430,7 @@ class Database(DALBase, Singleton):
                 if new_user_id not in self.n_categories_user_ratings[category]:
                     self.n_categories_user_ratings[category][new_user_id] = n_curr_cat_values
                 else:
-                    for value, n_code in n_curr_cat_values.iteritems():
+                    for value, n_code in n_curr_cat_values.items():
                         self.n_categories_user_ratings[category][new_user_id].setdefault(value, 0)
                         self.n_categories_user_ratings[category][new_user_id][value] += n_code
 
