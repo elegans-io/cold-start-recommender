@@ -196,7 +196,7 @@ class Recommender(Singleton):
                     cat_rec[cat] = self._categories_cooccurrence[cat].T.dot(user_vec)
                     cat_rec[cat].sort(ascending=False)
                     #print("DEBUG [get_recommendations] cat_rec (except):\n %s", cat_rec)
-                for item_id, score in rec.iteritems():
+                for item_id, score in rec.items():
                     #print("DEBUG [get_recommendations] rec_item_id: %s", k)
                     try:
                         item = self.db.get_items(item_id=item_id)

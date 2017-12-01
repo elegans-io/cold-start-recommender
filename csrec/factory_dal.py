@@ -1,6 +1,3 @@
-__author__ = "elegans.io Ltd"
-__email__ = "info@elegans.io"
-
 # database abstraction layer factory
 
 from csrec.exceptions import *

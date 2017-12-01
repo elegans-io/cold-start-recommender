@@ -1,7 +1,12 @@
 from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
-import csrec  # for version
+
+__version__ = '0.4.1'
+__author__ = 'elegans.io Ltd'
+__license__ = 'GPL v2'
+__maintainer__ = 'elegans-io'
+__email__ = 'info@elegans.io'
 
 here = path.abspath(path.dirname(__file__))
 
@@ -14,12 +19,12 @@ def setup_package():
     build_requires = ['numpy', 'pandas']
 
     metadata = dict(
-        name='cold-start-recommender',
+        name='csrec',
 
         # Versions should comply with PEP440.  For a discussion on single-sourcing
         # the version across setup.py and the project code, see
         # https://packaging.python.org/en/latest/single_source_version.html
-        version=csrec.__version__,
+        version=__version__,
         description='In-memory recommender for recommendations produced on-the-fly',
         long_description=long_description,
 
@@ -27,11 +32,11 @@ def setup_package():
         url='https://github.com/elegans-io/cold-start-recommender',
 
         # Author details
-        author='elegans.io Ltd',
-        author_email='info@elegans.io',
+        author=__author__,
+        author_email=__email__,
 
         # Choose your license
-        license='GPL v2',
+        license=__license__,
 
         # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
@@ -66,7 +71,6 @@ def setup_package():
         # requirements files see:
         # https://packaging.python.org/en/latest/requirements.html
         # See also https://github.com/scipy/scipy/blob/master/setup.py (malemi)
-        setup_requires=build_requires,
         install_requires=build_requires,
 
         # List additional groups of dependencies here (e.g. development dependencies).

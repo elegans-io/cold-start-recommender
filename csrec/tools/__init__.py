@@ -1,5 +1,0 @@
-__author__ = "Angelo Leto"
-__version__ = "0.3.13"
-__license__ = "Lesser GPL"
-__maintainer__ = "Angelo Leto"
-__email__ = "angleto@gmail.com"

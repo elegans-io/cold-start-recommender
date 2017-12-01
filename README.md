@@ -6,10 +6,25 @@ Easy, fast, greedy recommender
 ******************************************************
 NB: We have re-written good part of the recommender.
 
-The APIs have changed, and the **webapp** is now a separate package, called `cold-start-recommender-webapp`, which can be installed via `pip`.
+The APIs have changed, and the **webapp** is now a separate package, called [cold-start-recommender-webapp](https://github.com/elegans-io/csrec-webapp), which can be installed via `pip`.
 You can still access the old version with:
 
-`pip install cold-start-recommender==0.3.15`
+```bash
+pip install cold-start-recommender==0.4.1
+```
+
+or from the source folder (same folder of the setup.py file):
+
+```bash
+pip install .
+```
+
+To Uninstall the package:
+
+```bash
+pip uninstall csrec
+```
+
 
 Any comment sent to info@elegans.io will be appreciated.
 ******************************************************
@@ -27,7 +42,7 @@ with the following characteristics:
     recommendations for this User, but also for other Users. This
     means  in-memory database and no batch computations.
 
-* **Ready to use.** Take a look at recommender_api.py to start
+* **Ready to use.** Take a look at [cold-start-recommender-webapp](https://github.com/elegans-io/csrec-webapp) to start
     a webapp that POSTs information and GETs recommendations.
 
 
