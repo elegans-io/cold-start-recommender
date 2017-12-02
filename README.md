@@ -10,7 +10,7 @@ The APIs have changed, and the **webapp** is now a separate package, called [col
 You can still access the old version with:
 
 ```bash
-pip install cold-start-recommender==0.4.1
+pip install cold-start-recommender==0.3.15
 ```
 
 or from the source folder (same folder of the setup.py file):
