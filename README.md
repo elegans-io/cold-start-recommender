@@ -197,6 +197,10 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
+**v 0.4.2 No backward compatibility with 3**
+
+Small fixes for Pypi
+
 **v 0.4.0 No backward compatibility with 3**
 
 * Action of users on users can be saved (see `insert_social_action` in dal.py)
