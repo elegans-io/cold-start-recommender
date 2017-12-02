@@ -9,7 +9,22 @@ NB: We have re-written good part of the recommender.
 The APIs have changed, and the **webapp** is now a separate package, called [cold-start-recommender-webapp](https://github.com/elegans-io/csrec-webapp), which can be installed via `pip`.
 You can still access the old version with:
 
-`pip install cold-start-recommender==0.3.15`
+```bash
+pip install cold-start-recommender==0.4.1
+```
+
+or from the source folder (same folder of the setup.py file):
+
+```bash
+pip install .
+```
+
+To Uninstall the package:
+
+```bash
+pip uninstall csrec
+```
+
 
 Any comment sent to info@elegans.io will be appreciated.
 ******************************************************
