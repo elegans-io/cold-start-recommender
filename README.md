@@ -10,7 +10,7 @@ The APIs have changed, and the **webapp** is now a separate package, called [col
 You can still access the old version with:
 
 ```bash
-pip install cold-start-recommender==0.4.1
+pip install cold-start-recommender==0.3.15
 ```
 
 or from the source folder (same folder of the setup.py file):
@@ -80,7 +80,7 @@ previous rating by any User, you cannot make any recommendation.
 
 CSRec tackles the issue in various ways.
 
-###Selective profiling
+### Selective profiling
 
 CSRec allows **profiling with well-known Items without biasing the results**.
 
@@ -101,30 +101,30 @@ co-occurence matrix is often too sparse to compute decent
 recommendations. In this way you start building multiple, denser,
 co-occurence matrices and use them from the very beginning.
 
-###Store any possible information
+### Store any possible information
 
 Any information is used. You decide which information you should
 record about a User rating an Item. This is similar to the previous
 point, but you also register the item_id.
 
-###Use everything you can, now
+### Use everything you can, now
 
 Any information is used *immediately*. The co-occurence matrix is
 updated as soon as a rating is inserted.
 
-###Efficient users' tracking
+### Efficient users' tracking
 
 It tracks anonymous users and merges their preferences into profiles. E.g. an anonymous visitors of a website
 likes a few items before the sign in/ sign up process. After sign up/ sign in the
 information can be reconciled --information relative to the session ID
 is moved into the correspondent user ID entry.
 
-###Mix recommended items and popular items
+### Mix recommended items and popular items
 
 What about users who would only receive a couple of recommendations?
 No problem! CSRec will fill the list with the most popular items (nor rated by such users).
 
-###Algorithms
+### Algorithms
 
 At the moment CSRec only provides purely item-based recommendations
 (co-occurence matrix dot the User's ratings array). In this way we can
@@ -197,6 +197,10 @@ new_engine.db.restore('pippo.db')
 
 Versions
 --------
+**v 0.4.2 No backward compatibility with 3**
+
+Small fixes for Pypi
+
 **v 0.4.0 No backward compatibility with 3**
 
 * Action of users on users can be saved (see `insert_social_action` in dal.py)

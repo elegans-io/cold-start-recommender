@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 __author__ = 'elegans.io Ltd'
 __license__ = 'GPL v2'
 __maintainer__ = 'elegans-io'
