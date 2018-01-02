@@ -65,11 +65,6 @@ class Database(DALBase, Singleton):
         """
         if attributes is not None:
             for k, v in attributes.items():
-                try:
-                    v = json.loads(v)
-                except ValueError:
-                    pass
-
                 if not isinstance(v, list):
                     values = [v]
                 else:
