@@ -377,6 +377,8 @@ class Database(DALBase, Singleton):
                 self.items_ratings_tbl[key][user_id]
             except KeyError:
                 pass
+            if self.items_ratings_tbl[key] == {}:
+                del self.items_ratings_tbl[key]
 
         # updating the social stuff
         try:
