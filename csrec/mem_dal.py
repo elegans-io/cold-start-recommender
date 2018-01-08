@@ -372,6 +372,12 @@ class Database(DALBase, Singleton):
         # updating ratings
         del self.users_ratings_tbl[user_id]
 
+        for key in self.items_ratings_tbl:
+            try:
+                self.items_ratings_tbl[key][user_id]
+            except KeyError:
+                pass
+
         # updating the social stuff
         try:
             del self.users_social_tbl[user_id]
