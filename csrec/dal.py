@@ -68,6 +68,18 @@ class DALBase(Observable):  # interface of the data abstraction layer
         raise NotImplementedError
 
     @abc.abstractmethod
+    @observable
+    def remove_user(self, user_id):
+        """
+        remove all the actions of a user
+
+        exception: raise a MergeEntitiesException if any error occur
+
+        :param user_id: user id, raise an error if does not exists
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_items(self, item_id=None):
         """
         get a dictionary of items

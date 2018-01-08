@@ -356,6 +356,41 @@ class Database(DALBase, Singleton):
             self.info_used.clear()
 
     @observable
+    def remove_user(self, user_id):
+        """
+        remove all the actions of a user
+
+        exception: raise a MergeEntitiesException if any error occur
+
+        :param user_id: user id, raise an error if does not exists
+        """
+        #  verifying that both users exists
+        if user_id not in self.users_ratings_tbl:
+            e_message = "unable to remove user, id does not exists: %s" % str(user_id)
+            raise MergeEntitiesException(e_message)
+
+        # updating ratings
+        del self.users_ratings_tbl[user_id]
+
+        # updating the social stuff
+        try:
+            del self.users_social_tbl[user_id]
+        except KeyError:
+            pass
+
+        for category in self.info_used:
+            if user_id in self.tot_categories_user_ratings[category]:
+                del self.tot_categories_user_ratings[category][user_id]
+
+            if user_id in self.n_categories_user_ratings[category]:
+                del self.n_categories_user_ratings[category][user_id]
+
+            for v in self.tot_categories_item_ratings[category]:
+                if user_id in self.tot_categories_item_ratings[category][v]:
+                    del self.tot_categories_item_ratings[category][v][user_id]
+                    del self.n_categories_item_ratings[category][v][user_id]
+
+    @observable
     def reconcile_user(self, old_user_id, new_user_id):
         """
         merge two users under the new user id, old user id will be removed
